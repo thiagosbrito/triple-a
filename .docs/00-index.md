@@ -1,6 +1,6 @@
 # Triple-A Stablecoin Checkout - Design Workspace
 
-Status: Verified foundation complete; domain contracts in progress
+Status: Verified foundation complete; implementation paused before M1
 Last updated: 2026-08-17
 
 ## Purpose

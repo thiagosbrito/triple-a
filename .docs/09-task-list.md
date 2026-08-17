@@ -42,15 +42,15 @@ Only the lead agent updates task status. At most one critical-path task may be
 
 ## Current milestone
 
-**Milestone M1: contracts and domain core.**
+**Foundation complete; implementation paused before Milestone M1.**
 
 ### Next task
 
-`M1-01` — Define currency/network runtime schemas and TypeScript types.
+`M1-01` — Define currency/network runtime schemas and TypeScript types when
+implementation resumes.
 
-The verified foundation is committed. Contract implementation begins with the
-supported payment-method boundary; no UI or mock behavior should precede these
-schemas.
+The verified foundation is committed. The candidate explicitly paused work
+before M1; no contract, mock, or feature implementation is currently active.
 
 ## Milestone M0 — Design gates and repository foundation
 
@@ -153,7 +153,7 @@ Next: M1-01
 
 | ID | Task | Depends on | Status | Owner | Acceptance gate / evidence |
 | --- | --- | --- | --- | --- | --- |
-| M1-01 | Define currency/network runtime schemas and TypeScript types. | M0-10 | `IN_PROGRESS` | Lead | All documented combinations validate; malformed data is rejected. |
+| M1-01 | Define currency/network runtime schemas and TypeScript types. | M0-10 | `READY` | Unassigned | All documented combinations validate; malformed data is rejected. |
 | M1-02 | Define payment creation, quote, merchant, and order schemas. | M1-01 | `BLOCKED` | Unassigned | Complete creation fixture validates without numeric money coercion. |
 | M1-03 | Define discriminated schemas for all eight status updates. | M1-02 | `BLOCKED` | Unassigned | Every fixture validates; missing status-specific fields fail. |
 | M1-04 | Define problem-response and protocol-error models. | M1-02 | `BLOCKED` | Unassigned | Requote 409 and malformed/unknown responses remain distinct from payment failure. |

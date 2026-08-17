@@ -420,3 +420,11 @@ the application foundation as one coherent initial repository state rather than
 split into artificial intermediate commits that would not verify independently.
 Root commit `fb75de0` is `chore: establish verified project foundation`.
 Subsequent domain and feature work will use focused incremental commits.
+
+## 2026-08-17 - Pause before M1
+
+After the foundation was completed, the automatic advancement rule moved
+M1-01 into progress. The candidate clarified that M1 work should not begin yet.
+No M1 code or dependency changes had been made. M1-01 was returned to `READY`
+and left unassigned; the repository remains at the completed foundation
+boundary until the candidate resumes implementation.
