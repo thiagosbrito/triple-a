@@ -90,6 +90,7 @@ would add a second state model and weaken the design.
 | No explorer URL or complete transaction-hash guarantee is defined. | A block-explorer link may be wrong or unsafe. | Show a hash only when supplied; omit explorer linking. |
 | No QR URI scheme is specified. | A raw address QR is safe but less convenient than a network-specific payment URI. | Default to encoding the exact address; document if amount-bearing URIs are deliberately omitted. |
 | `GET` fixtures may contain only status-specific fields rather than the full payment. | The client needs the original creation response for quote/order context. | Merge status updates into cached payment data through a typed boundary, without allowing absent fields to erase known data. |
+| The supplied quote-not-expired problem-type URI returned HTTP 404 when checked on 2026-08-18, and no official page specifically explains this hosted-checkout error to shoppers. | The problem URI and available developer/invoicing pages are unsuitable as contextual shopper help. | Preserve the URI as an opaque RFC 9457 discriminator. Provide concise inline transfer and expiry guidance; add an external help link only if Triple-A supplies an authoritative page for this flow. |
 
 ## Assumption approval states
 

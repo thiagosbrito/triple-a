@@ -1,7 +1,7 @@
 # Delivery Task List
 
 Status: Active execution tracker
-Last updated: 2026-08-17
+Last updated: 2026-08-18
 
 ## Purpose
 
@@ -42,15 +42,17 @@ Only the lead agent updates task status. At most one critical-path task may be
 
 ## Current milestone
 
-**Foundation complete; implementation paused before Milestone M1.**
+**Milestone M1 in progress — contracts and domain core.**
 
 ### Next task
 
-`M1-01` — Define currency/network runtime schemas and TypeScript types when
-implementation resumes.
+`M1-09` — Integrate and commit the domain slice.
 
-The verified foundation is committed. The candidate explicitly paused work
-before M1; no contract, mock, or feature implementation is currently active.
+The candidate resumed implementation on 2026-08-18. Transport contracts, error
+taxonomy, exhaustive lifecycle presentation, and the exact decimal domain are
+verified. The complete PDF fixture audit, expiration policy, polling policy,
+full quality gate, and production build pass; integration review is active.
+Mock routes and shopper-facing feature work have not started.
 
 ## Milestone M0 — Design gates and repository foundation
 
@@ -153,15 +155,210 @@ Next: M1-01
 
 | ID | Task | Depends on | Status | Owner | Acceptance gate / evidence |
 | --- | --- | --- | --- | --- | --- |
-| M1-01 | Define currency/network runtime schemas and TypeScript types. | M0-10 | `READY` | Unassigned | All documented combinations validate; malformed data is rejected. |
-| M1-02 | Define payment creation, quote, merchant, and order schemas. | M1-01 | `BLOCKED` | Unassigned | Complete creation fixture validates without numeric money coercion. |
-| M1-03 | Define discriminated schemas for all eight status updates. | M1-02 | `BLOCKED` | Unassigned | Every fixture validates; missing status-specific fields fail. |
-| M1-04 | Define problem-response and protocol-error models. | M1-02 | `BLOCKED` | Unassigned | Requote 409 and malformed/unknown responses remain distinct from payment failure. |
-| M1-05 | Implement exhaustive lifecycle classification and presentation model. | M1-03, M1-04 | `BLOCKED` | Unassigned | Compile-time exhaustiveness; action/terminal categories match accepted semantics. |
-| M1-06 | Implement decimal parsing, validation, arithmetic, and formatting. | M0-10 | `BLOCKED` | Unassigned | Six- and eighteen-decimal boundaries pass; no float or scientific notation. |
-| M1-07 | Implement pure expiration and polling-policy functions. | M1-03 | `BLOCKED` | Unassigned | Absolute-time, terminal-state, and retry/backoff policies have deterministic tests. |
-| M1-08 | Validate assessment fixtures against runtime contracts. | M1-01..M1-07 | `BLOCKED` | Unassigned | Contract suite covers success, malformed data, and unknown status. |
-| M1-09 | Integrate and commit the domain slice. | M1-08 | `BLOCKED` | Lead | Full checks pass; docs reflect any changed assumptions. |
+| M1-01 | Define currency/network runtime schemas and TypeScript types. | M0-10 | `DONE` | Lead | Strict response schemas validate all six documented pairs plus an expanded catalog; branded open identifiers and runtime membership avoid a duplicated frontend allowlist. |
+| M1-02 | Define payment creation, quote, merchant, and order schemas. | M1-01 | `DONE` | Lead | Strict request/response schemas preserve every money field as a decimal string and accept identifiers issued by an expanded catalog. |
+| M1-03 | Define discriminated schemas for all eight status updates. | M1-02 | `DONE` | Lead | All eight PDF fixtures validate; 23 focused tests reject unsupported statuses/reasons, missing/cross-variant fields, and inconsistent confirmations. |
+| M1-04 | Define problem-response and protocol-error models. | M1-02 | `DONE` | Lead | Exact 409 problem and typed problem/protocol errors pass 13 focused tests; payment `failed` remains business data. |
+| M1-05 | Implement exhaustive lifecycle classification and presentation model. | M1-03, M1-04 | `DONE` | Lead | Exhaustive policy/presentation records and 18 focused tests cover all statuses, actionability, safety copy, and terminal behavior. |
+| M1-06 | Implement decimal parsing, validation, arithmetic, and formatting. | M0-10 | `DONE` | Lead | Twenty-one focused tests cover catalog-defined scale, exact arithmetic, deliberate trailing-zero handling, and plain formatting without floats or scientific notation. |
+| M1-07 | Implement pure expiration and polling-policy functions. | M1-03 | `DONE` | Lead | Thirty-two focused tests cover absolute deadlines, zero-time reconciliation, status-specific intervals, terminal stopping, and bounded retry/backoff. |
+| M1-08 | Validate assessment fixtures against runtime contracts. | M1-01..M1-07 | `DONE` | Lead | Visual/text PDF audit and 82 contract tests cover every supplied success/problem fixture, malformed payloads, and unknown status; missing requote request coverage was added. |
+| M1-09 | Integrate and commit the domain slice. | M1-08 | `IN_PROGRESS` | Lead | Full checks pass; docs reflect any changed assumptions. |
+
+### M1-01 evidence
+
+```text
+Task: M1-01
+Status: DONE
+Owner: Lead
+Files: package.json; pnpm-lock.yaml;
+       src/features/checkout/api/contracts/currencies.ts;
+       src/features/checkout/api/contracts/currencies.test.ts;
+       architecture and execution documentation
+Checks: pnpm exec vitest run
+        src/features/checkout/api/contracts/currencies.test.ts;
+        pnpm typecheck; pnpm lint; pnpm format:check; pnpm audit --json
+Results: 1 focused file and 15 contract tests passed; strict TypeScript,
+         ESLint, and formatting passed; 0 dependency advisories
+Requirements: PR-02; MR-01; MR-03
+Risks/assumptions: currency-to-network compatibility is derived from validated
+                   API data rather than duplicated as a client matrix;
+                   host Node remains 24.16.0 versus the 24.18.0 project pin
+Next: M1-02
+```
+
+### M1-02 evidence
+
+```text
+Task: M1-02
+Status: DONE
+Owner: Lead
+Files: src/features/checkout/api/contracts/currencies.ts;
+       src/features/checkout/api/contracts/payments.ts;
+       src/features/checkout/api/contracts/payments.test.ts;
+       execution documentation
+Checks: pnpm exec vitest run
+        src/features/checkout/api/contracts/payments.test.ts;
+        pnpm exec vitest run <currency and payment contract tests>;
+        pnpm check
+Results: 20 focused payment tests, 35 combined contract tests, and all 36
+         repository tests passed; formatting, ESLint, and strict TypeScript pass
+Requirements: PR-03; PR-05; PR-06; MR-01; MR-02
+Risks/assumptions: request schema validates identifier shape while the route
+                   will validate pair compatibility against the latest
+                   currency catalog; asset-scale enforcement remains M1-06
+Next: M1-03
+```
+
+### M1-01/M1-02 open-catalog correction evidence
+
+```text
+Task: M1-01 and M1-02 compatibility correction
+Status: DONE
+Owner: Lead
+Files: payment-method, currency, and payment contracts and tests;
+       domain/payment-method.ts and focused tests; contract conventions,
+       architecture, and discussion history
+Checks: pnpm exec vitest run <four affected contract/domain files>;
+        pnpm typecheck; pnpm check; git diff --check
+Results: 44 focused tests and all 99 repository tests passed; formatting,
+         ESLint, and strict TypeScript passed
+Requirements: PR-02; PR-03; forward-compatible catalog integration
+Risks/assumptions: TypeScript cannot derive a build-time literal union from a
+                   runtime catalog. Distinct brands prevent identifier mixups;
+                   current-catalog membership establishes availability.
+Next: M1-06 remains active
+```
+
+### M1-03 evidence
+
+```text
+Task: M1-03
+Status: DONE
+Owner: Lead
+Files: src/features/checkout/api/contracts/payment-status.ts;
+       src/features/checkout/api/contracts/payment-status.test.ts;
+       decimal-boundary tests and execution documentation
+Checks: PDF pages 3-5 model-to-schema audit;
+        pnpm exec vitest run <all three contract test files>;
+        pnpm check; git diff --check
+Results: all 8 status fixtures and all 6 currency/network pairs validate;
+         23 focused status tests, 60 contract tests, and all 61 repository
+         tests pass; formatting, ESLint, and strict TypeScript pass
+Requirements: PR-02; PR-05; PR-09..PR-16; MR-01..MR-04
+Risks/assumptions: strict objects intentionally reject unexpected protocol
+                   fields; confirmation-state relationships are validated;
+                   leading-zero decimal strings are preserved because the PDF
+                   does not forbid them
+Next: M1-04
+```
+
+### M1-04 evidence
+
+```text
+Task: M1-04
+Status: DONE
+Owner: Lead
+Files: src/features/checkout/api/contracts/problem.ts;
+       src/features/checkout/api/contracts/problem.test.ts;
+       contract conventions and execution documentation
+Checks: pnpm exec vitest run
+        src/features/checkout/api/contracts/problem.test.ts;
+        pnpm check; git diff --check
+Results: exact application/problem+json fixture and 13 focused tests passed;
+         all 74 repository tests passed; formatting, ESLint, and strict
+         TypeScript passed
+Requirements: PR-08; PR-14; PR-15; PR-16
+Risks/assumptions: RFC detail remains opaque; response Content-Type and the
+                   actual HTTP/body status match will be enforced by the typed
+                   API client when it is implemented
+Next: M1-05
+```
+
+### M1-05 evidence
+
+```text
+Task: M1-05
+Status: DONE
+Owner: Lead
+Files: src/features/checkout/domain/payment-status.ts;
+       src/features/checkout/domain/payment-presentation.ts;
+       corresponding focused tests; status-vocabulary contract integration;
+       shopper-help decision and execution documentation
+Checks: pnpm exec vitest run <two lifecycle domain test files>;
+        pnpm check; git diff --check
+Results: 18 focused lifecycle/presentation tests and all 92 repository tests
+         passed; formatting, ESLint, and strict TypeScript passed
+Requirements: PR-04; PR-10..PR-15
+Risks/assumptions: underpaid remains provisionally non-terminal; inline shopper
+                   education is used because no authoritative hosted-checkout
+                   help page was found; no external help URL is shipped
+Next: M1-06
+```
+
+### M1-06 evidence
+
+```text
+Task: M1-06
+Status: DONE
+Owner: Lead
+Files: package.json; pnpm-lock.yaml;
+       src/features/checkout/domain/money.ts and focused tests;
+       execution and discussion documentation
+Checks: pnpm exec vitest run src/features/checkout/domain/money.test.ts;
+        pnpm typecheck; pnpm check; pnpm audit --json; git diff --check
+Results: 21 focused money tests and all 120 repository tests passed;
+         formatting, ESLint, and strict TypeScript passed; 0 advisories across
+         556 audited dependencies
+Requirements: MR-01..MR-05; ADR-0004
+Risks/assumptions: transfer formatting deliberately preserves the validated
+                   wire representation; calculated formatting removes only
+                   insignificant trailing zeroes and never rounds; asset scale
+                   comes from the validated catalog
+Next: M1-07
+```
+
+### M1-07 evidence
+
+```text
+Task: M1-07
+Status: DONE
+Owner: Lead
+Files: src/features/checkout/domain/quote-expiration.ts;
+       src/features/checkout/domain/polling-policy.ts; focused tests;
+       architecture and discussion documentation
+Checks: pnpm exec vitest run <expiration and polling policy tests>;
+        pnpm typecheck; pnpm check; git diff --check
+Results: 32 focused policy tests and all 152 then-current repository tests
+         passed; formatting, ESLint, and strict TypeScript passed
+Requirements: PR-06..PR-13; PR-16; ADR-0003
+Risks/assumptions: polling intervals are responsive assessment constants, not
+                   claims about production chain timing; underpaid remains
+                   provisionally active; TanStack adapters must preserve the
+                   documented one-based consecutive-failure semantics
+Next: M1-08
+```
+
+### M1-08 evidence
+
+```text
+Task: M1-08
+Status: DONE
+Owner: Lead
+Files: payment creation/requote schemas and tests; PDF audit evidence in task
+       and discussion documentation
+Checks: full visual and extracted-text audit of PDF pages 2-6;
+        pnpm exec vitest run src/features/checkout/api/contracts;
+        pnpm typecheck; pnpm check; pnpm build; git diff --check
+Results: 82 contract tests and all 157 repository tests passed; production
+         Next.js build passed. Audit found and fixed the previously missing
+         requote request schema; successful requote correctly reuses the
+         payment-creation response schema.
+Requirements: PR-02..PR-17; MR-01..MR-05
+Risks/assumptions: strict object policy targets the fixed assessment mock;
+                   server-driven catalog values remain intentionally open
+Next: M1-09
+```
 
 ### M1 safe parallelism
 
@@ -198,7 +395,7 @@ owners if they do not share files. Route integration remains lead-owned.
 | M3-02 | Build merchant/order summary and method-selection step. | M3-01 | `BLOCKED` | Unassigned | Locale-formatted fiat and every API-provided method are accessible. |
 | M3-03 | Implement quote mutation and stale-response protection. | M3-01, M3-02 | `BLOCKED` | Lead | Obsolete quote responses cannot replace current intent. |
 | M3-04 | Build fixed issued-method and guarded-change flow. | M3-03 | `BLOCKED` | Unassigned | Active instructions are not edited in place; warning and confirmation work. |
-| M3-05 | Build exact amount, fee breakdown, address/copy, and network safety UI. | M3-03 | `BLOCKED` | Unassigned | One quote supplies all fields; network is explicit; copy is exact and announced. |
+| M3-05 | Build exact amount, fee breakdown, address/copy, and network safety UI. | M3-03 | `BLOCKED` | Unassigned | One quote supplies all fields; network is explicit; copy is exact and announced; inline guidance explains the irreversible transfer steps without relying on the dead problem-type URI. |
 | M3-06 | Add local QR generation and QR/address consistency tests. | M3-05 | `BLOCKED` | Unassigned | No remote data disclosure; QR payload matches visible validated instruction. |
 | M3-07 | Add responsive and accessibility verification for quote flow. | M3-02..M3-06 | `BLOCKED` | Unassigned | Keyboard/mobile/contrast/status criteria pass. |
 | M3-08 | Integrate Figma direction when available without changing domain behavior. | M3-02..M3-07 | `BLOCKED` | Lead + candidate | Visual implementation preserves safety hierarchy and responsive behavior. |

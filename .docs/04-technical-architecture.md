@@ -1,6 +1,6 @@
 # Technical Architecture
 
-Status: Foundation scaffolded; quality toolchain in progress
+Status: Foundation scaffolded; contract implementation in progress
 Scope: Architecture and implementation baseline
 
 ## Goals
@@ -114,8 +114,15 @@ src/
 
   features/checkout/
     api/
+      contracts/
+        primitives.ts
+        payment-method.ts
+        currencies.ts
+        payments.ts
+        payment-status-values.ts
+        payment-status.ts
+        problem.ts
       checkout-api.ts
-      checkout-contracts.ts
       checkout-query-keys.ts
     domain/
       payment-status.ts
@@ -164,6 +171,26 @@ important than the folder spelling:
 - Domain functions do not import React.
 - Components do not build endpoint URLs or parse JSON.
 - Mock fixtures are not imported by production-facing components.
+
+Transport contracts are split by protocol concern under `api/contracts/`
+rather than accumulated in one large schema file. Zod schemas remain the source
+of their inferred TypeScript types. Shared primitives may be exported from one
+contract module only when their boundary meaning is identical; domain money
+rules remain separate.
+
+Closed behavioral vocabularies, such as payment statuses, use one readonly
+tuple for both the runtime Zod enum and its TypeScript union. Server-owned
+reference values are different: currency codes and network identifiers are
+branded, structurally validated strings, and supported pairs are derived from
+the latest validated catalog. This lets the backend add a valid payment method
+without requiring a frontend enum release. Validated money and
+safety-sensitive identifiers are branded at the boundary to prevent
+structurally identical strings from being interchanged later.
+
+Objects remain strict because this committed mock API is a fixed assessment
+contract; a production integration with independently evolving additive fields
+would require revisiting that compatibility policy. Open values and open object
+shapes are separate compatibility decisions.
 
 ## Framework security baseline
 
@@ -241,6 +268,8 @@ Responsibilities:
 Client policy:
 
 - Validate the full response.
+- Accept structurally valid currencies, networks, and decimal scales rather
+  than restricting the catalog to the examples in the assessment fixture.
 - Derive network options from the selected currency.
 - Never hard-code a second client-side compatibility matrix.
 
@@ -256,6 +285,8 @@ Responsibilities:
 
 Client policy:
 
+- Validate the requested currency/network pair against the latest catalog;
+  identifier shape validation alone does not establish availability.
 - Treat selection plus quote creation as a transaction from the shopper's
   perspective.
 - Keep the previous consistent view during a new request only if it remains
@@ -374,17 +405,21 @@ Prefer TanStack Query's request lifecycle over a raw `setInterval`.
 
 Dynamic polling policy:
 
-- `awaiting_payment`: poll at a modest fixed interval.
-- `detected`: poll more frequently because the shopper is actively waiting.
-- `confirming`: choose an interval informed by confirmation metadata but capped
-  for a responsive demonstration.
-- `underpaid`: continue at a modest interval if the non-terminal decision is
-  accepted.
+- `awaiting_payment`: poll every 3 seconds.
+- `detected`: poll every 1.5 seconds because the shopper is actively waiting.
+- `confirming`: poll every 2 seconds. The quote does not carry average network
+  confirmation time, so the client does not couple active polling to a possibly
+  stale catalog entry.
+- `underpaid`: continue every 3 seconds under the accepted provisional
+  non-terminal interpretation.
 - terminal statuses: return `false` from the interval policy.
-- transport failure: bounded retry/backoff without clearing the last good data.
+- transport failure: retry automatically at 1, 2, and 4 seconds, then preserve
+  the last good data and require automatic recovery on a later interval or an
+  explicit manual retry.
 
-The exact intervals are implementation constants, documented and testable.
-They should not pretend the mock's timing represents real chain timing.
+These are named implementation constants with deterministic tests. They are a
+responsive assessment policy and do not pretend the mock's timing represents
+real chain timing.
 
 ## Mock scenario design
 

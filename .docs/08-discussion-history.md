@@ -428,3 +428,163 @@ M1-01 into progress. The candidate clarified that M1 work should not begin yet.
 No M1 code or dependency changes had been made. M1-01 was returned to `READY`
 and left unassigned; the repository remains at the completed foundation
 boundary until the candidate resumes implementation.
+
+## 2026-08-18 - M1 resumed and currency contract implemented
+
+The candidate explicitly resumed implementation with M1-01. The assessment PDF
+was rechecked before freezing the boundary shape because the planning summary
+did not preserve every `GET /api/currencies` field name.
+
+The contract validates the published currency codes, network identifiers,
+asset decimal scales, positive integer confirmation metadata, and plain decimal
+string fees. It rejects unknown fields, duplicate currency/network identifiers,
+and malformed values. Currency-to-network compatibility is intentionally read
+from the validated response instead of being duplicated as a second client-side
+matrix. Contract files are grouped by protocol concern under `api/contracts/`
+so later payment, status, and problem schemas can remain cohesive.
+
+### PDF model validation
+
+After the candidate requested direct validation, the currency response, payment
+request/response, and all eight status fixtures on PDF pages 3-5 were exercised
+against the runtime schemas. The review found one unsupported restriction: the
+first decimal regex rejected leading-zero representations even though the brief
+only requires decimal strings. That restriction was removed so boundary values
+are preserved exactly; numeric values, signs, and exponent notation remain
+invalid. The full contract suite and repository quality checks passed after the
+correction.
+
+### Explicit payment-status union
+
+The candidate requested that payment status be represented as a closed union
+rather than a general string. The implementation already used one readonly
+status tuple, a Zod enum, and literal discriminants, so unsupported transport
+values were rejected. The exported TypeScript alias was changed to the more
+explicit `(typeof PAYMENT_STATUSES)[number]` form requested by the candidate,
+and a direct runtime test now proves that parsing an unsupported status throws.
+The creation response remains intentionally narrower: that endpoint can only
+return `awaiting_payment` initially.
+
+### Contract-pattern review before M1-04
+
+The candidate requested a broader type and Zod review before more contracts
+were added. The review found that generic protocol validators lived in the
+currency endpoint module, creating avoidable cross-endpoint coupling. They were
+moved to `contracts/primitives.ts`; currency/network vocabularies moved to
+`payment-method.ts`; endpoint schemas now depend inward on those modules.
+
+The pass also replaced deprecated Zod 3-style URL validation with the Zod 4
+top-level API, centralized positive integers and ISO timestamps, removed
+repeated raw status/currency literals, and branded validated money plus
+safety-sensitive identifiers. `AGENTS.md` now defines the contract conventions
+so later agent work does not recreate parallel interfaces, coercing validators,
+or endpoint-to-endpoint dependencies.
+
+## 2026-08-18 - M1-04 problem and protocol error taxonomy
+
+The documented requote conflict is modeled as a known
+`application/problem+json` response and wrapped as `ApiProblemError` for query
+consumers. Unknown statuses and malformed response bodies are validation
+failures wrapped as `ProtocolError`. The lifecycle value `failed` stays valid
+business data and is not included in either error class.
+
+The RFC `detail` field is deliberately retained as opaque shopper/developer
+context rather than parsed for the quote timestamp. The later typed API client
+will validate the response media type and ensure the actual HTTP status agrees
+with the problem body's advisory status.
+
+The candidate noticed that the supplied problem-type URI does not resolve to a
+documentation page. A direct HEAD request on 2026-08-18 confirmed HTTP 404. The
+literal remains in the schema because it is the fixture's wire discriminator,
+but the implementation treats it as opaque and will not dereference or present
+it as a support link.
+
+A follow-up search found live official developer payment-request documentation,
+an invoicing-tool customer article, and a supported-networks article, but none
+accurately explains quote expiry for this hosted checkout. The candidate's UX
+goal is retained through inline “how to pay safely” guidance. An external help
+link remains conditional on receiving an authoritative flow-specific page from
+Triple-A rather than linking adjacent documentation that may mislead shoppers.
+
+## 2026-08-18 - M1-05 exhaustive lifecycle presentation
+
+The lifecycle domain now has one exhaustive status-policy record covering
+terminality, polling, quote expiry, payment-method commitment, and whether the
+shopper can act, must wait, is complete, or needs support. A separate exhaustive
+presentation record provides factual headings, summaries, actions, and safety
+instructions without importing React or transport schemas.
+
+The presentation model explicitly prevents resending after detection, instructs
+an underpaid shopper to send only the outstanding amount, makes expired
+instructions unusable, avoids refund promises for overpayment, and avoids a
+blind retry after settlement failure. Four inline education steps cover the
+irreversible transfer flow independently of external documentation.
+
+## 2026-08-18 - Open payment-method catalog correction
+
+The candidate identified that hard-coding the currency and network examples as
+frontend enums would reject a valid catalog expansion deployed by the backend.
+The first contract implementation had incorrectly treated example reference
+data like the deliberately closed payment-status state machine.
+
+Currency codes and network identifiers are now distinct branded strings whose
+shape is validated at the HTTP boundary. The currency endpoint owns the set of
+available values, asset decimal scales, and valid currency/network pairings. A
+pure domain function checks a selection against the latest validated catalog;
+the payment route will independently enforce the same compatibility rule.
+
+Payment statuses remain a closed enum because each value requires known,
+exhaustive lifecycle and safety behavior. This establishes the reusable rule:
+closed behavioral vocabularies use enums, while server-driven reference data
+uses open validated identifiers plus runtime membership checks.
+
+## 2026-08-18 - M1-06 exact money domain
+
+The accepted decimal ADR is now implemented with exact `big.js` 7.0.1 and its
+7.0.0 TypeScript definitions. The domain uses an isolated strict constructor so
+primitive-number input is rejected without mutating configuration for other
+consumers. Public operations accept only branded validated decimal strings and
+return validated plain decimal strings.
+
+Scale validation uses the selected asset's validated catalog metadata rather
+than a currency-code switch, preserving forward compatibility with new assets.
+Transfer instructions preserve the server's exact representation, including
+deliberate trailing zeroes. Calculated display values can remove insignificant
+zeroes or enforce a minimum display scale, but reject excess precision rather
+than round it. Exact comparison, addition, non-negative subtraction, six-,
+eight-, and eighteen-decimal boundaries, and non-exponent formatting are
+covered by focused tests.
+
+## 2026-08-18 - M1-07 expiration and polling policy
+
+Pure deadline functions calculate remaining milliseconds from the validated
+absolute `expires_at` value and the current epoch time, so background timer
+throttling cannot accumulate countdown drift. An awaiting payment at local zero
+first enters a one-reconciliation state and only becomes locally expired if it
+remains awaiting afterward. Detection, confirmation, and provisional
+underpayment freeze quote expiry; authoritative terminal states keep their
+existing lifecycle classifications.
+
+Polling uses explicit assessment constants: 3 seconds while awaiting or
+underpaid, 1.5 seconds after detection, and 2 seconds while confirming. The
+confirming interval is deliberately not derived from catalog timing because the
+issued quote does not contain that metadata. Transport retries use deterministic
+1-, 2-, and 4-second delays and then stop automatic retrying without changing
+the payment lifecycle state. TanStack Query integration will later adapt these
+pure policies while preserving its non-overlapping request lifecycle.
+
+## 2026-08-18 - M1-08 complete assessment-fixture audit
+
+The seven-page assessment PDF was re-extracted and pages 2 through 6 were
+rendered for a direct visual source-to-contract comparison. The six documented
+currency/network combinations, payment creation request and response, all eight
+status responses, and the quote-not-expired problem match the implemented
+runtime schemas.
+
+The audit found one omitted boundary: requote has a distinct request containing
+only `currency` and `network`. Its successful 201 body is explicitly the same
+shape as payment creation, with the same reference, a new quote, and status reset
+to awaiting. A strict requote request schema and shared success-response schema
+were added with exact and malformed fixture tests. The complete contract suite
+then passed 82 tests, and the integrated repository passed 157 tests plus the
+production Next.js build.

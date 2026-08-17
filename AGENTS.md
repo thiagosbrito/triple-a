@@ -77,6 +77,48 @@ silently choosing an interpretation.
 - Keep lifecycle classification, money rules, expiration policy, query keys,
   and shared schemas centralized. Do not create competing implementations.
 
+## Contract and validation conventions
+
+- Treat every HTTP payload as `unknown` until one Zod schema validates it at
+  the route or typed-client boundary. Do not parse the same response again in
+  hooks or components.
+- A Zod schema is the source of truth for an object payload. Export its inferred
+  output type; do not maintain a parallel interface or type alias with repeated
+  fields.
+- Define genuinely closed string vocabularies once as an `as const` tuple,
+  create the runtime validator with `z.enum(tuple)`, and derive the union with
+  `(typeof tuple)[number]`. Reference `schema.enum.<value>` from literal schemas
+  instead of repeating unverified discriminator strings.
+- Do not turn examples from a server-driven reference endpoint into a closed
+  vocabulary. Currency and network identifiers are branded, structurally
+  validated strings; availability and pair compatibility come from the latest
+  validated currency catalog. Unknown payment statuses remain invalid because
+  lifecycle behavior is intentionally exhaustive.
+- Put protocol-wide scalars in `api/contracts/primitives.ts`, server-driven
+  payment-method identifiers in `payment-method.ts`, and endpoint payload
+  schemas in cohesive files. Endpoint modules must not import primitives from
+  another endpoint contract.
+- Use `z.strictObject` for the assessment's fixed mock protocol. Adding or
+  accepting a response field is therefore an explicit contract change, not a
+  silent strip. Revisit this policy if the integration target becomes an
+  independently evolving production API.
+- Use current Zod 4 top-level validators such as `z.int()`, `z.url()`, and
+  `z.iso.datetime()`. Do not introduce deprecated chained string-format APIs.
+- Never use `z.coerce`, lossy transforms, defaults, or catch fallbacks for
+  money, status, identifiers, or timestamps received over HTTP. Invalid data
+  must surface as a protocol error.
+- Brand validated money and safety-sensitive identifiers so arbitrary strings,
+  order IDs, payment references, addresses, and transaction hashes cannot be
+  interchanged after parsing. Branding supplements runtime validation; it does
+  not replace it.
+- Use discriminated unions for status-dependent payloads. Put single-payload
+  invariants in schema refinements; put relationships requiring another
+  response or current application state in pure domain functions.
+- Each contract needs the exact PDF fixture, malformed scalar/shape cases,
+  unknown-value coverage for closed enums, forward-compatible value coverage
+  for open reference data, and any cross-field refinement cases. Assert that
+  wire-format money remains unchanged after parsing.
+
 ## Task ownership and parallel work
 
 - Only the lead updates `.docs/09-task-list.md` status or shared architecture.
