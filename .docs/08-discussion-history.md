@@ -411,3 +411,12 @@ design-document links, current security evidence, deferred optional work, and
 factual agent collaboration. Scenario-control instructions remain explicitly
 marked as pending until M2/M5 implements and verifies those controls; the README
 does not pretend unfinished evaluator behavior exists.
+
+## 2026-08-17 - M0-10 initial foundation commit
+
+The planning documents predated Git initialization and already referenced the
+accepted scaffold, commands, and evidence. They were therefore committed with
+the application foundation as one coherent initial repository state rather than
+split into artificial intermediate commits that would not verify independently.
+Root commit `fb75de0` is `chore: establish verified project foundation`.
+Subsequent domain and feature work will use focused incremental commits.

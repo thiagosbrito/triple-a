@@ -1,6 +1,6 @@
 # Triple-A Stablecoin Checkout - Design Workspace
 
-Status: Accepted foundation; repository setup in progress
+Status: Verified foundation complete; domain contracts in progress
 Last updated: 2026-08-17
 
 ## Purpose

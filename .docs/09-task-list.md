@@ -42,15 +42,15 @@ Only the lead agent updates task status. At most one critical-path task may be
 
 ## Current milestone
 
-**Milestone M0: establish the repository from the accepted foundation.**
+**Milestone M1: contracts and domain core.**
 
 ### Next task
 
-`M0-10` — Verify and commit the intentional foundation.
+`M1-01` — Define currency/network runtime schemas and TypeScript types.
 
-The README matches the current repository and clearly marks future scenario
-instructions. The complete foundation is now receiving its final staged review
-and first coherent commit.
+The verified foundation is committed. Contract implementation begins with the
+supported payment-method boundary; no UI or mock behavior should precede these
+schemas.
 
 ## Milestone M0 — Design gates and repository foundation
 
@@ -65,7 +65,7 @@ and first coherent commit.
 | M0-07 | Configure strict TypeScript, Tailwind, linting, formatting, Vitest, Testing Library, and Playwright. | M0-06 | `DONE` | Lead | `pnpm check`, `pnpm test:e2e`, and `pnpm build` passed on 2026-08-17; exact tool versions and Chromium installed; one component and one browser smoke test pass. |
 | M0-08 | Review dependency audit without forced upgrades. | M0-07 | `DONE` | Lead | `pnpm audit --json` on 2026-08-17 reviewed 554 dependencies: 0 info/low/moderate/high/critical advisories; no forced upgrade applied. |
 | M0-09 | Create README skeleton and repository documentation links. | M0-06 | `DONE` | Lead | README now has verified run/quality commands, architecture and design links, honest scenario placeholders, omissions, security evidence, and factual agent-work history. |
-| M0-10 | Commit the intentional foundation. | M0-04, M0-05, M0-07, M0-08, M0-09 | `REVIEW` | Lead | Final quality, audit, ignored-artifact, secret-pattern, and repository-content review passed; commit creation remains. |
+| M0-10 | Commit the intentional foundation. | M0-04, M0-05, M0-07, M0-08, M0-09 | `DONE` | Lead | Root commit `fb75de0` (`chore: establish verified project foundation`); staged diff check passed and the post-commit worktree was clean. |
 
 ### M0-06 evidence
 
@@ -133,11 +133,27 @@ Risks/assumptions: exact evaluator scenario instructions remain intentionally
 Next: M0-10
 ```
 
+### M0-10 evidence
+
+```text
+Task: M0-10
+Status: DONE
+Owner: Lead
+Files: accepted design package, AGENTS.md, README.md, exact dependency
+       foundation, src/app scaffold, formatting/testing configuration
+Checks: pnpm check; prior M0-07 pnpm test:e2e and pnpm build;
+        M0-08 pnpm audit --json; secret-pattern scan; git diff --cached --check
+Commit: fb75de0 chore: establish verified project foundation
+Risks/assumptions: exact Node 24.18.0 verification remains pending because the
+                   host currently provides Node 24.16.0
+Next: M1-01
+```
+
 ## Milestone M1 — Contracts and domain core
 
 | ID | Task | Depends on | Status | Owner | Acceptance gate / evidence |
 | --- | --- | --- | --- | --- | --- |
-| M1-01 | Define currency/network runtime schemas and TypeScript types. | M0-10 | `BLOCKED` | Unassigned | All documented combinations validate; malformed data is rejected. |
+| M1-01 | Define currency/network runtime schemas and TypeScript types. | M0-10 | `IN_PROGRESS` | Lead | All documented combinations validate; malformed data is rejected. |
 | M1-02 | Define payment creation, quote, merchant, and order schemas. | M1-01 | `BLOCKED` | Unassigned | Complete creation fixture validates without numeric money coercion. |
 | M1-03 | Define discriminated schemas for all eight status updates. | M1-02 | `BLOCKED` | Unassigned | Every fixture validates; missing status-specific fields fail. |
 | M1-04 | Define problem-response and protocol-error models. | M1-02 | `BLOCKED` | Unassigned | Requote 409 and malformed/unknown responses remain distinct from payment failure. |
