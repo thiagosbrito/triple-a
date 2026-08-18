@@ -19,7 +19,16 @@ describe("PaymentInstructions", () => {
       expires_at: "2026-08-18T12:00:00.000Z",
     });
 
-    render(<PaymentInstructions quote={quote} assetDecimals={6} />);
+    render(
+      <PaymentInstructions
+        quote={quote}
+        assetDecimals={6}
+        countdown={{
+          remainingMilliseconds: 120_000,
+          isAtDeadline: false,
+        }}
+      />,
+    );
 
     const instructions = screen.getByRole("region", {
       name: "Send exactly",
@@ -64,7 +73,16 @@ describe("PaymentInstructions", () => {
       expires_at: "2026-08-18T12:00:00.000Z",
     });
 
-    render(<PaymentInstructions quote={quote} assetDecimals={18} />);
+    render(
+      <PaymentInstructions
+        quote={quote}
+        assetDecimals={18}
+        countdown={{
+          remainingMilliseconds: 120_000,
+          isAtDeadline: false,
+        }}
+      />,
+    );
 
     const instructions = screen.getByRole("region", {
       name: "Send exactly",

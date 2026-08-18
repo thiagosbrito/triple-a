@@ -3,15 +3,21 @@ import { formatTransferAmount } from "../domain/money";
 import { AddressCopy } from "./address-copy";
 import { NetworkSafetyNotice } from "./network-safety-notice";
 import { PaymentQr } from "./payment-qr";
+import { QuoteCountdown } from "./quote-countdown";
 
 type PaymentInstructionsProps = Readonly<{
   quote: PaymentQuote;
   assetDecimals: number;
+  countdown: Readonly<{
+    remainingMilliseconds: number;
+    isAtDeadline: boolean;
+  }>;
 }>;
 
 export function PaymentInstructions({
   quote,
   assetDecimals,
+  countdown,
 }: PaymentInstructionsProps) {
   const asset = quote.crypto_currency;
   const paymentAmount = formatTransferAmount(
@@ -42,6 +48,8 @@ export function PaymentInstructions({
         Use the <strong className="text-slate-950">{quote.network_name}</strong>{" "}
         network. The amount and network must match this quote.
       </p>
+
+      <QuoteCountdown expiresAt={quote.expires_at} {...countdown} />
 
       <dl className="my-6 divide-y divide-slate-100 rounded-2xl bg-slate-50 px-4">
         <div className="flex items-start justify-between gap-4 py-3 text-sm">

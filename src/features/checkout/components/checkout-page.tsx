@@ -7,9 +7,8 @@ import type { PaymentMethodSelection } from "../domain/payment-method";
 import { useBrowserLocale } from "../hooks/use-browser-locale";
 import { useCurrencies } from "../hooks/use-currencies";
 import { useCreatePayment } from "../hooks/use-create-payment";
+import { IssuedPaymentFlow } from "./issued-payment-flow";
 import { OrderSummaryCard } from "./order-summary";
-import { PaymentInstructions } from "./payment-instructions";
-import { PaymentMethodCommitment } from "./payment-method-commitment";
 import { PaymentMethodSelector } from "./payment-method-selector";
 
 type CheckoutPageProps = Readonly<{
@@ -121,16 +120,13 @@ export function CheckoutPage({ session }: CheckoutPageProps) {
                   </button>
                 </div>
               ) : quote.data && selectedCurrency ? (
-                <>
-                  <PaymentMethodCommitment
-                    payment={quote.data}
-                    onConfirmChange={changePaymentMethod}
-                  />
-                  <PaymentInstructions
-                    quote={quote.data.quote}
-                    assetDecimals={selectedCurrency.decimals}
-                  />
-                </>
+                <IssuedPaymentFlow
+                  key={`${quote.data.payment_reference}:${quote.data.quote.expires_at}`}
+                  payment={quote.data}
+                  session={session}
+                  assetDecimals={selectedCurrency.decimals}
+                  onConfirmChange={changePaymentMethod}
+                />
               ) : quote.data ? (
                 <div
                   role="alert"
