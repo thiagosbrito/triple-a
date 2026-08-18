@@ -14,7 +14,7 @@ import { createMockPayment } from "@/mocks/quote-factory";
 
 import Home from "./page";
 
-function renderPage() {
+const renderPage = () => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -25,12 +25,12 @@ function renderPage() {
   );
 
   return { ...view, queryClient };
-}
+};
 
-function mockSuccessfulCheckoutApi(
+const mockSuccessfulCheckoutApi = (
   transformPayment: (payment: CreatePaymentResponse) => unknown = (payment) =>
     payment,
-) {
+) => {
   return vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => {
     if (String(input) === "/api/currencies") {
       return Promise.resolve(Response.json(CURRENCIES_FIXTURE));
@@ -49,16 +49,16 @@ function mockSuccessfulCheckoutApi(
 
     return Promise.reject(new Error(`Unexpected request: ${String(input)}`));
   });
-}
+};
 
-function deferred<T>() {
+const deferred = <T,>() => {
   let resolve!: (value: T) => void;
   const promise = new Promise<T>((resolvePromise) => {
     resolve = resolvePromise;
   });
 
   return { promise, resolve };
-}
+};
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -260,7 +260,7 @@ describe("hosted checkout page", () => {
     ).toHaveTextContent("USDC on Polygon");
   });
 
-  it("requires no-funds-sent confirmation before returning to selection", async () => {
+  it("returns directly to selection while method changing is available", async () => {
     mockSuccessfulCheckoutApi();
     const user = userEvent.setup();
 
@@ -276,39 +276,7 @@ describe("hosted checkout page", () => {
     });
     await user.click(changeButton);
 
-    const confirmation = screen.getByRole("alertdialog", {
-      name: "Confirm payment method change",
-    });
-    expect(confirmation).toHaveTextContent(
-      "Continue only if you have not sent funds or started the transfer.",
-    );
-    const keepButton = screen.getByRole("button", {
-      name: "Keep current quote",
-    });
-    await waitFor(() => expect(keepButton).toHaveFocus());
-
-    await user.click(keepButton);
-
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("status", { name: "Quote created" }),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole("radio")).not.toBeInTheDocument();
-    await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: "Change payment method" }),
-      ).toHaveFocus(),
-    );
-
-    await user.click(
-      screen.getByRole("button", { name: "Change payment method" }),
-    );
-    await user.click(
-      screen.getByRole("button", {
-        name: "I have not sent funds — change method",
-      }),
-    );
-
     expect(
       screen.queryByRole("status", { name: "Quote created" }),
     ).not.toBeInTheDocument();

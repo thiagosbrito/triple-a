@@ -1,11 +1,13 @@
-import { CheckoutPage } from "@/features/checkout/components/checkout-page";
+import { CheckoutPage } from "@/features/checkout/components/checkout/checkout-page";
 import { CHECKOUT_SESSION } from "@/features/checkout/config/checkout-session";
 
-export default function Home() {
+const Home = () => {
   return (
     <CheckoutPage
       session={CHECKOUT_SESSION}
       showDevelopmentTools={process.env.NODE_ENV === "development"}
     />
   );
-}
+};
+
+export default Home;

@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 import type { PaymentScenarioConfiguration } from "@/features/checkout/api/contracts/development";
 import { createPaymentResponseSchema } from "@/features/checkout/api/contracts/payments";
 
-test("changes network only through a guarded new quote and locks after detection", async ({
+test("changes network directly while awaiting and locks after detection", async ({
   page,
   request,
 }) => {
@@ -44,25 +44,6 @@ test("changes network only through a guarded new quote and locks after detection
     name: "Change payment method",
   });
   await changeMethod.click();
-  const confirmation = page.getByRole("alertdialog", {
-    name: "Confirm payment method change",
-  });
-  await expect(confirmation).toContainText(
-    "If you already sent funds, keep this quote and wait for detection",
-  );
-  await confirmation
-    .getByRole("button", { name: "Keep current quote" })
-    .click();
-  await expect(changeMethod).toBeFocused();
-  await expect(firstInstructions).toContainText(firstPayment.quote.total_due);
-  await expect(page.getByText(firstPayment.quote.crypto_address)).toBeVisible();
-
-  await changeMethod.click();
-  await confirmation
-    .getByRole("button", {
-      name: "I have not sent funds — change method",
-    })
-    .click();
 
   await expect(firstInstructions).toHaveCount(0);
   await expect(page.getByText(firstPayment.quote.crypto_address)).toHaveCount(

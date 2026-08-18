@@ -1,10 +1,11 @@
-import { z } from "zod";
-
 import {
   currenciesResponseSchema,
   type CurrenciesResponse,
 } from "./contracts/currencies";
-import { paymentStatusUpdateSchema } from "./contracts/payment-status";
+import {
+  paymentStatusUpdateSchema,
+  type PaymentStatusUpdate,
+} from "./contracts/payment-status";
 import {
   createPaymentRequestSchema,
   createPaymentResponseSchema,
@@ -16,283 +17,74 @@ import {
   type RequotePaymentResponse,
 } from "./contracts/payments";
 import {
-  ApiProblemError,
-  ProtocolError,
-  knownApiProblemSchema,
-  type ApiOperation,
-} from "./contracts/problem";
-import {
   paymentReferenceSchema,
   type PaymentReference,
 } from "./contracts/primitives";
-import type { PaymentStatusUpdate } from "./contracts/payment-status";
+import {
+  getRequestInit,
+  jsonRequestInit,
+  requestJson,
+  type ApiRequestOptions,
+  type CheckoutFetch,
+} from "./http-json";
+import {
+  assertCreatedPaymentMatchesRequest,
+  assertPaymentStatusMatchesReference,
+  assertRequotedPaymentMatchesRequest,
+} from "./validate-api-response";
 
-type CheckoutFetch = (
-  input: RequestInfo | URL,
-  init?: RequestInit,
-) => Promise<Response>;
-
-type ApiRequestOptions = Readonly<{
-  signal?: AbortSignal;
-}>;
-
-type CheckoutApiOptions = Readonly<{
-  fetch?: CheckoutFetch;
-}>;
+type CheckoutApiOptions = Readonly<{ fetch?: CheckoutFetch }>;
 
 export type CheckoutApi = Readonly<{
-  getCurrencies(options?: ApiRequestOptions): Promise<CurrenciesResponse>;
-  createPayment(
+  getCurrencies: (options?: ApiRequestOptions) => Promise<CurrenciesResponse>;
+  createPayment: (
     request: CreatePaymentRequest,
     options?: ApiRequestOptions,
-  ): Promise<CreatePaymentResponse>;
-  getPayment(
+  ) => Promise<CreatePaymentResponse>;
+  getPayment: (
     reference: PaymentReference,
     options?: ApiRequestOptions,
-  ): Promise<PaymentStatusUpdate>;
-  requotePayment(
+  ) => Promise<PaymentStatusUpdate>;
+  requotePayment: (
     reference: PaymentReference,
     request: RequotePaymentRequest,
     options?: ApiRequestOptions,
-  ): Promise<RequotePaymentResponse>;
+  ) => Promise<RequotePaymentResponse>;
 }>;
 
-type RequestJsonOptions<TResponse> = Readonly<{
-  fetch: CheckoutFetch;
-  operation: ApiOperation;
-  path: string;
-  expectedStatus: number;
-  responseSchema: z.ZodType<TResponse>;
-  init?: RequestInit;
-}>;
-
-function invalidJsonError(
-  operation: ApiOperation,
-  cause: SyntaxError,
-): ProtocolError {
-  return new ProtocolError(
-    operation,
-    [{ message: "Response body is not valid JSON", path: [] }],
-    { cause },
-  );
-}
-
-function unexpectedStatusError(
-  operation: ApiOperation,
-  expectedStatus: number,
-  actualStatus: number,
-): ProtocolError {
-  return new ProtocolError(operation, [
-    {
-      message: `Expected HTTP ${expectedStatus}, received HTTP ${actualStatus}`,
-      path: ["status"],
-    },
-  ]);
-}
-
-async function readResponseJson(
-  response: Response,
-  operation: ApiOperation,
-): Promise<unknown> {
-  try {
-    return await response.json();
-  } catch (error) {
-    // A stream/network failure remains a transport error so retry policy can
-    // distinguish it from a server payload that violates the protocol.
-    if (!(error instanceof SyntaxError)) {
-      throw error;
-    }
-
-    throw invalidJsonError(operation, error);
-  }
-}
-
-async function requestJson<TResponse>({
-  fetch,
-  operation,
-  path,
-  expectedStatus,
-  responseSchema,
-  init,
-}: RequestJsonOptions<TResponse>): Promise<TResponse> {
-  const response = await fetch(path, init);
-  const body = await readResponseJson(response, operation);
-
-  if (!response.ok) {
-    const parsedProblem = knownApiProblemSchema.safeParse(body);
-
-    if (!parsedProblem.success) {
-      throw ProtocolError.fromZodError(operation, parsedProblem.error);
-    }
-
-    if (parsedProblem.data.status !== response.status) {
-      throw unexpectedStatusError(
-        operation,
-        parsedProblem.data.status,
-        response.status,
-      );
-    }
-
-    throw new ApiProblemError(parsedProblem.data);
-  }
-
-  if (response.status !== expectedStatus) {
-    throw unexpectedStatusError(operation, expectedStatus, response.status);
-  }
-
-  const parsedResponse = responseSchema.safeParse(body);
-
-  if (!parsedResponse.success) {
-    throw ProtocolError.fromZodError(operation, parsedResponse.error);
-  }
-
-  return parsedResponse.data;
-}
-
-function assertCreatedPaymentMatchesRequest(
-  response: CreatePaymentResponse,
-  request: CreatePaymentRequest,
-): CreatePaymentResponse {
-  const issues = [];
-
-  if (response.order_id !== request.order_id) {
-    issues.push({
-      message: "Payment order does not match the requested order",
-      path: ["order_id"],
-    });
-  }
-
-  if (response.quote.crypto_currency !== request.currency) {
-    issues.push({
-      message: "Quote currency does not match the requested currency",
-      path: ["quote", "crypto_currency"],
-    });
-  }
-
-  if (response.quote.network !== request.network) {
-    issues.push({
-      message: "Quote network does not match the requested network",
-      path: ["quote", "network"],
-    });
-  }
-
-  if (issues.length > 0) {
-    throw new ProtocolError("create_payment", issues);
-  }
-
-  return response;
-}
-
-function assertPaymentStatusMatchesReference(
-  response: PaymentStatusUpdate,
-  reference: PaymentReference,
-): PaymentStatusUpdate {
-  if (response.payment_reference !== reference) {
-    throw new ProtocolError("get_payment", [
-      {
-        message: "Payment status does not match the requested reference",
-        path: ["payment_reference"],
-      },
-    ]);
-  }
-
-  return response;
-}
-
-function assertRequotedPaymentMatchesRequest(
-  response: RequotePaymentResponse,
-  reference: PaymentReference,
-  request: RequotePaymentRequest,
-): RequotePaymentResponse {
-  const issues = [];
-
-  if (response.payment_reference !== reference) {
-    issues.push({
-      message: "Requote does not match the requested payment reference",
-      path: ["payment_reference"],
-    });
-  }
-
-  if (response.quote.crypto_currency !== request.currency) {
-    issues.push({
-      message: "Requote currency does not match the requested currency",
-      path: ["quote", "crypto_currency"],
-    });
-  }
-
-  if (response.quote.network !== request.network) {
-    issues.push({
-      message: "Requote network does not match the requested network",
-      path: ["quote", "network"],
-    });
-  }
-
-  if (issues.length > 0) {
-    throw new ProtocolError("requote_payment", issues);
-  }
-
-  return response;
-}
-
-function jsonRequestInit(
-  method: "POST",
-  body: unknown,
-  options?: ApiRequestOptions,
-): RequestInit {
-  return {
-    method,
-    headers: {
-      Accept: "application/json, application/problem+json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-    ...(options?.signal ? { signal: options.signal } : {}),
-  };
-}
-
-function getRequestInit(options?: ApiRequestOptions): RequestInit {
-  return {
-    headers: { Accept: "application/json, application/problem+json" },
-    ...(options?.signal ? { signal: options.signal } : {}),
-  };
-}
-
-export function createCheckoutApi(
+export const createCheckoutApi = (
   options: CheckoutApiOptions = {},
-): CheckoutApi {
+): CheckoutApi => {
   const fetcher: CheckoutFetch =
     options.fetch ?? ((input, init) => globalThis.fetch(input, init));
 
   return {
-    getCurrencies(requestOptions) {
-      return requestJson({
+    getCurrencies: (requestOptions) =>
+      requestJson({
         fetch: fetcher,
         operation: "get_currencies",
         path: "/api/currencies",
         expectedStatus: 200,
         responseSchema: currenciesResponseSchema,
         init: getRequestInit(requestOptions),
-      });
-    },
+      }),
 
-    async createPayment(request, requestOptions) {
+    createPayment: async (request, requestOptions) => {
       const body = createPaymentRequestSchema.parse(request);
-
       const response = await requestJson({
         fetch: fetcher,
         operation: "create_payment",
         path: "/api/payments",
         expectedStatus: 201,
         responseSchema: createPaymentResponseSchema,
-        init: jsonRequestInit("POST", body, requestOptions),
+        init: jsonRequestInit(body, requestOptions),
       });
 
       return assertCreatedPaymentMatchesRequest(response, body);
     },
 
-    async getPayment(reference, requestOptions) {
+    getPayment: async (reference, requestOptions) => {
       const validReference = paymentReferenceSchema.parse(reference);
-
       const response = await requestJson({
         fetch: fetcher,
         operation: "get_payment",
@@ -305,17 +97,16 @@ export function createCheckoutApi(
       return assertPaymentStatusMatchesReference(response, validReference);
     },
 
-    async requotePayment(reference, request, requestOptions) {
+    requotePayment: async (reference, request, requestOptions) => {
       const validReference = paymentReferenceSchema.parse(reference);
       const body = requotePaymentRequestSchema.parse(request);
-
       const response = await requestJson({
         fetch: fetcher,
         operation: "requote_payment",
         path: `/api/payments/${encodeURIComponent(validReference)}/requote`,
         expectedStatus: 201,
         responseSchema: requotePaymentResponseSchema,
-        init: jsonRequestInit("POST", body, requestOptions),
+        init: jsonRequestInit(body, requestOptions),
       });
 
       return assertRequotedPaymentMatchesRequest(
@@ -325,6 +116,6 @@ export function createCheckoutApi(
       );
     },
   };
-}
+};
 
 export const checkoutApi = createCheckoutApi();

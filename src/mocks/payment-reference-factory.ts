@@ -9,7 +9,7 @@ type PaymentReferenceGlobal = typeof globalThis & {
 
 const referenceGlobal = globalThis as PaymentReferenceGlobal;
 
-export function createUniqueMockPaymentReference(): PaymentReference {
+export const createUniqueMockPaymentReference = (): PaymentReference => {
   const sequence =
     (referenceGlobal.__tripleAStablecoinPaymentReferenceSequence ?? 0) + 1;
   referenceGlobal.__tripleAStablecoinPaymentReferenceSequence = sequence;
@@ -17,4 +17,4 @@ export function createUniqueMockPaymentReference(): PaymentReference {
   return paymentReferenceSchema.parse(
     `AQH-100306-PMT-${String(sequence).padStart(6, "0")}`,
   );
-}
+};

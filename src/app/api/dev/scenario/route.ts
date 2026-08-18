@@ -22,7 +22,7 @@ const UNAVAILABLE_SCENARIO_DETAIL =
   "The selected status is not compatible with the payment's issued quote.";
 const PAYMENT_NOT_FOUND_DETAIL = "The requested payment was not found.";
 
-function problemResponse(status: 400 | 404, detail: string): Response {
+const problemResponse = (status: 400 | 404, detail: string): Response => {
   const problem =
     status === 400
       ? badRequestProblemSchema.parse({
@@ -42,13 +42,13 @@ function problemResponse(status: 400 | 404, detail: string): Response {
     status,
     headers: { "Content-Type": "application/problem+json" },
   });
-}
+};
 
-function notFound(): Response {
+const notFound = (): Response => {
   return problemResponse(404, PAYMENT_NOT_FOUND_DETAIL);
-}
+};
 
-function configurationResponse(paymentReference: string): Response {
+const configurationResponse = (paymentReference: string): Response => {
   return Response.json(
     paymentScenarioControlResponseSchema.parse({
       payment_reference: paymentReference,
@@ -56,13 +56,13 @@ function configurationResponse(paymentReference: string): Response {
     }),
     { headers: { "Cache-Control": "no-store" } },
   );
-}
+};
 
-function developmentApiIsDisabled(): boolean {
+const developmentApiIsDisabled = (): boolean => {
   return process.env.NODE_ENV === "production";
-}
+};
 
-export async function GET(request: Request): Promise<Response> {
+export const GET = async (request: Request): Promise<Response> => {
   if (developmentApiIsDisabled()) {
     return notFound();
   }
@@ -84,9 +84,9 @@ export async function GET(request: Request): Promise<Response> {
 
     throw error;
   }
-}
+};
 
-export async function PUT(request: Request): Promise<Response> {
+export const PUT = async (request: Request): Promise<Response> => {
   if (developmentApiIsDisabled()) {
     return notFound();
   }
@@ -122,4 +122,4 @@ export async function PUT(request: Request): Promise<Response> {
 
     throw error;
   }
-}
+};

@@ -104,8 +104,8 @@ export const PAYMENT_PRESENTATIONS = {
   },
 } as const satisfies Record<PaymentStatus, PaymentPresentation>;
 
-export function getPaymentPresentation(
+export const getPaymentPresentation = (
   status: PaymentStatus,
-): PaymentPresentation {
+): PaymentPresentation => {
   return PAYMENT_PRESENTATIONS[status];
-}
+};

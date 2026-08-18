@@ -19,19 +19,19 @@ import { POST } from "./route";
 const quoteCreatedAt = new Date("2026-08-14T08:49:10.842Z");
 const quoteExpiresAt = new Date("2026-08-14T08:52:10.842Z");
 
-function context(reference: string) {
+const context = (reference: string) => {
   return { params: Promise.resolve({ reference }) };
-}
+};
 
-function requoteRequest(body: unknown): Request {
+const requoteRequest = (body: unknown): Request => {
   return new Request("http://localhost/api/payments/AQH-100306-PMT/requote", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-}
+};
 
-function registerPayment() {
+const registerPayment = () => {
   const payment = createMockPayment(
     createPaymentRequestSchema.parse({
       order_id: "ORD-88213",
@@ -42,7 +42,7 @@ function registerPayment() {
   );
   paymentScenarioStore.registerPayment(payment, quoteCreatedAt);
   return payment;
-}
+};
 
 beforeEach(() => {
   vi.useFakeTimers();

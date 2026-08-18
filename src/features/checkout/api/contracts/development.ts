@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { paymentStatusSchema } from "./payment-status-values";
+import { createPaymentResponseSchema } from "./payments";
 import { paymentReferenceSchema } from "./primitives";
 
 export const PAYMENT_SCENARIO_MODES = ["exact_state", "progression"] as const;
@@ -14,6 +15,7 @@ export const TRANSPORT_FAILURE_KINDS = [
   "network_disconnect",
 ] as const;
 export const MAX_SCENARIO_DELAY_MILLISECONDS = 30_000;
+export const MAX_QUOTE_EXPIRY_SECONDS = 600;
 
 export const paymentScenarioSchema = z.discriminatedUnion("mode", [
   z.strictObject({
@@ -49,6 +51,15 @@ export const paymentScenarioControlRequestSchema = z.strictObject({
 export const paymentScenarioControlResponseSchema =
   paymentScenarioControlRequestSchema;
 
+export const developmentQuoteExpiryRequestSchema = z.strictObject({
+  payment_reference: paymentReferenceSchema,
+  expires_in_seconds: z.int().min(0).max(MAX_QUOTE_EXPIRY_SECONDS),
+});
+
+export const developmentQuoteExpiryResponseSchema = z.strictObject({
+  payment: createPaymentResponseSchema,
+});
+
 export const requestMetricsSchema = z.strictObject({
   current_in_flight: z.int().nonnegative(),
   maximum_in_flight: z.int().nonnegative(),
@@ -69,6 +80,12 @@ export type PaymentScenarioControlRequest = z.infer<
 >;
 export type PaymentScenarioControlResponse = z.infer<
   typeof paymentScenarioControlResponseSchema
+>;
+export type DevelopmentQuoteExpiryRequest = z.infer<
+  typeof developmentQuoteExpiryRequestSchema
+>;
+export type DevelopmentQuoteExpiryResponse = z.infer<
+  typeof developmentQuoteExpiryResponseSchema
 >;
 export type RequestMetrics = z.infer<typeof requestMetricsSchema>;
 export type PaymentRequestMetricsResponse = z.infer<

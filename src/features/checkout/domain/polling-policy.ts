@@ -17,9 +17,9 @@ export interface TransportRetryPolicy {
   delayMilliseconds: number | null;
 }
 
-export function getPollingIntervalMilliseconds(
+export const getPollingIntervalMilliseconds = (
   status: PaymentStatus,
-): number | false {
+): number | false => {
   if (getPaymentStatusPolicy(status).polling === "stop") {
     return false;
   }
@@ -43,16 +43,16 @@ export function getPollingIntervalMilliseconds(
       return exhaustiveStatus;
     }
   }
-}
+};
 
 /**
  * `consecutiveFailures` starts at one for the first failed request. The policy
  * permits three automatic retries with deterministic exponential delays; the
  * UI can then keep the last good state and offer a manual retry.
  */
-export function getTransportRetryPolicy(
+export const getTransportRetryPolicy = (
   consecutiveFailures: number,
-): TransportRetryPolicy {
+): TransportRetryPolicy => {
   if (!Number.isSafeInteger(consecutiveFailures) || consecutiveFailures < 1) {
     throw new RangeError(
       "Consecutive failures must be a positive safe integer",
@@ -69,4 +69,4 @@ export function getTransportRetryPolicy(
   );
 
   return { retry: true, delayMilliseconds };
-}
+};

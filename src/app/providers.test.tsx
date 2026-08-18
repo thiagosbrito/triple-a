@@ -9,7 +9,7 @@ describe("AppProviders", () => {
   it("provides one stable QueryClient across child rerenders", () => {
     const observedClients: ReturnType<typeof useQueryClient>[] = [];
 
-    function QueryClientProbe({ label }: Readonly<{ label: string }>) {
+    const QueryClientProbe = ({ label }: Readonly<{ label: string }>) => {
       const queryClient = useQueryClient();
 
       useEffect(() => {
@@ -17,7 +17,7 @@ describe("AppProviders", () => {
       }, [label, queryClient]);
 
       return <span>{label}</span>;
-    }
+    };
 
     const view = render(
       <AppProviders>

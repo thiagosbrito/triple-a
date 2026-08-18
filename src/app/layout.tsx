@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import type { ReactNode } from "react";
 import "./globals.css";
 
 import { AppProviders } from "./providers";
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
   description: "Complete your payment with a supported stablecoin network.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+const RootLayout = ({ children }: Readonly<{ children: ReactNode }>) => {
   return (
     <html
       lang="en"
@@ -30,4 +31,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </body>
     </html>
   );
-}
+};
+
+export default RootLayout;

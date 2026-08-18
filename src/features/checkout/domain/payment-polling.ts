@@ -8,9 +8,9 @@ export const PAYMENT_POLL_INTERVAL_MILLISECONDS = Object.freeze({
   underpaid: 3_000,
 });
 
-export function getPaymentPollInterval(
+export const getPaymentPollInterval = (
   update: PaymentStatusUpdate | undefined,
-): number | false {
+): number | false => {
   switch (update?.status) {
     case undefined:
     case PAYMENT_STATUS.awaiting_payment:
@@ -27,4 +27,4 @@ export function getPaymentPollInterval(
     case PAYMENT_STATUS.failed:
       return false;
   }
-}
+};

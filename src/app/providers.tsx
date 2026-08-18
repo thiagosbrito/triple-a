@@ -9,23 +9,25 @@ import type { ReactNode } from "react";
 
 let browserQueryClient: QueryClient | undefined;
 
-export function createCheckoutQueryClient(): QueryClient {
+export const createCheckoutQueryClient = (): QueryClient => {
   return new QueryClient();
-}
+};
 
-function getQueryClient(): QueryClient {
+const getQueryClient = (): QueryClient => {
   if (environmentManager.isServer()) {
     return createCheckoutQueryClient();
   }
 
   browserQueryClient ??= createCheckoutQueryClient();
   return browserQueryClient;
-}
+};
 
-export function AppProviders({ children }: Readonly<{ children: ReactNode }>) {
+export const AppProviders = ({
+  children,
+}: Readonly<{ children: ReactNode }>) => {
   return (
     <QueryClientProvider client={getQueryClient()}>
       {children}
     </QueryClientProvider>
   );
-}
+};

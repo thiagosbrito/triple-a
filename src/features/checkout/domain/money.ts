@@ -30,31 +30,31 @@ export class MoneyError extends Error {
   }
 }
 
-function assertValidScale(scale: number): void {
+const assertValidScale = (scale: number): void => {
   if (!Number.isSafeInteger(scale) || scale < 0) {
     throw new MoneyError(
       "invalid_scale",
       "Decimal scale must be a non-negative safe integer",
     );
   }
-}
+};
 
-function fractionDigits(value: DecimalString): number {
+const fractionDigits = (value: DecimalString): number => {
   return value.split(".")[1]?.length ?? 0;
-}
+};
 
-function parseDecimal(value: DecimalString): Big {
+const parseDecimal = (value: DecimalString): Big => {
   return new StrictBig(value);
-}
+};
 
-function serializeDecimal(value: Big): NonNegativeDecimalString {
+const serializeDecimal = (value: Big): NonNegativeDecimalString => {
   return nonNegativeDecimalStringSchema.parse(value.toFixed());
-}
+};
 
-export function assertAmountScale(
+export const assertAmountScale = (
   value: DecimalString,
   maximumFractionDigits: number,
-): void {
+): void => {
   assertValidScale(maximumFractionDigits);
 
   const actualFractionDigits = fractionDigits(value);
@@ -65,26 +65,26 @@ export function assertAmountScale(
       `Amount has ${actualFractionDigits} fraction digits; maximum is ${maximumFractionDigits}`,
     );
   }
-}
+};
 
-export function compareDecimalAmounts(
+export const compareDecimalAmounts = (
   left: DecimalString,
   right: DecimalString,
-): Big.Comparison {
+): Big.Comparison => {
   return parseDecimal(left).cmp(parseDecimal(right));
-}
+};
 
-export function addDecimalAmounts(
+export const addDecimalAmounts = (
   left: DecimalString,
   right: DecimalString,
-): NonNegativeDecimalString {
+): NonNegativeDecimalString => {
   return serializeDecimal(parseDecimal(left).plus(parseDecimal(right)));
-}
+};
 
-export function subtractDecimalAmounts(
+export const subtractDecimalAmounts = (
   minuend: DecimalString,
   subtrahend: DecimalString,
-): NonNegativeDecimalString {
+): NonNegativeDecimalString => {
   const result = parseDecimal(minuend).minus(parseDecimal(subtrahend));
 
   if (result.lt(ZERO)) {
@@ -95,20 +95,20 @@ export function subtractDecimalAmounts(
   }
 
   return serializeDecimal(result);
-}
+};
 
 /**
  * Transfer instructions preserve the server's exact validated representation,
  * including deliberate trailing zeroes. The currency catalog controls the
  * maximum accepted scale.
  */
-export function formatTransferAmount(
+export const formatTransferAmount = (
   value: DecimalString,
   assetDecimals: number,
-): string {
+): string => {
   assertAmountScale(value, assetDecimals);
   return value;
-}
+};
 
 /**
  * Formats the assessment's EUR order total without converting the decimal
@@ -116,10 +116,10 @@ export function formatTransferAmount(
  * grouping, separators, and currency placement from an exact BigInt integer;
  * the validated two-digit fraction is then preserved as text.
  */
-export function formatEuroOrderAmount(
+export const formatEuroOrderAmount = (
   value: DecimalString,
   locale?: Intl.LocalesArgument,
-): string {
+): string => {
   const euroFractionDigits = 2;
   assertAmountScale(value, euroFractionDigits);
 
@@ -142,17 +142,17 @@ export function formatEuroOrderAmount(
     .formatToParts(BigInt(integerPart))
     .map((part) => (part.type === "fraction" ? exactFraction : part.value))
     .join("");
-}
+};
 
 /**
  * Formats a calculated value without exponent notation or rounding. Insignificant
  * trailing zeroes are removed unless a minimum display scale is requested.
  */
-export function formatCalculatedAmount(
+export const formatCalculatedAmount = (
   value: DecimalString,
   assetDecimals: number,
   minimumFractionDigits = 0,
-): string {
+): string => {
   assertAmountScale(value, assetDecimals);
   assertValidScale(minimumFractionDigits);
 
@@ -171,4 +171,4 @@ export function formatCalculatedAmount(
   );
 
   return decimal.toFixed(outputFractionDigits);
-}
+};

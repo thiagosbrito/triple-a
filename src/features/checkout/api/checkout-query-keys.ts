@@ -27,6 +27,12 @@ export const checkoutMutationKeys = {
       "set-development-scenario",
       reference,
     ] as const,
+  setDevelopmentQuoteExpiry: (reference: PaymentReference) =>
+    [
+      ...checkoutMutationKeys.all,
+      "set-development-quote-expiry",
+      reference,
+    ] as const,
   resetDevelopmentRequestMetrics: (reference: PaymentReference) =>
     [
       ...checkoutMutationKeys.all,

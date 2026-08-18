@@ -54,10 +54,10 @@ describe("payment status policy", () => {
     });
   });
 
-  it("allows guarded method changes only before funds are detected", () => {
+  it("allows direct method changes only before funds are detected", () => {
     expect(
       PAYMENT_STATUSES.filter(
-        (status) => getPaymentStatusPolicy(status).methodChange === "guarded",
+        (status) => getPaymentStatusPolicy(status).methodChange === "available",
       ),
     ).toEqual([PAYMENT_STATUS.awaiting_payment]);
   });

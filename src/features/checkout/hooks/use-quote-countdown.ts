@@ -7,16 +7,16 @@ import { getRemainingMilliseconds } from "../domain/quote-expiration";
 
 const MAXIMUM_REPAINT_DELAY_MILLISECONDS = 1_000;
 
-function getNextRepaintDelay(remainingMilliseconds: number): number {
+const getNextRepaintDelay = (remainingMilliseconds: number): number => {
   const millisecondsToNextSecond =
     remainingMilliseconds % MAXIMUM_REPAINT_DELAY_MILLISECONDS;
 
   return millisecondsToNextSecond === 0
     ? MAXIMUM_REPAINT_DELAY_MILLISECONDS
     : millisecondsToNextSecond;
-}
+};
 
-export function useQuoteCountdown(expiresAt: IsoTimestamp, enabled = true) {
+export const useQuoteCountdown = (expiresAt: IsoTimestamp, enabled = true) => {
   const [nowEpochMilliseconds, setNowEpochMilliseconds] = useState(() =>
     Date.now(),
   );
@@ -29,7 +29,7 @@ export function useQuoteCountdown(expiresAt: IsoTimestamp, enabled = true) {
     let timeout: ReturnType<typeof setTimeout> | undefined;
     let disposed = false;
 
-    function refreshFromClock(): void {
+    const refreshFromClock = (): void => {
       if (disposed) {
         return;
       }
@@ -48,13 +48,13 @@ export function useQuoteCountdown(expiresAt: IsoTimestamp, enabled = true) {
           getNextRepaintDelay(remainingMilliseconds),
         );
       }
-    }
+    };
 
-    function refreshWhenVisible(): void {
+    const refreshWhenVisible = (): void => {
       if (document.visibilityState === "visible") {
         refreshFromClock();
       }
-    }
+    };
 
     refreshFromClock();
     window.addEventListener("focus", refreshFromClock);
@@ -79,4 +79,4 @@ export function useQuoteCountdown(expiresAt: IsoTimestamp, enabled = true) {
     remainingMilliseconds,
     isAtDeadline: remainingMilliseconds === 0,
   } as const;
-}
+};

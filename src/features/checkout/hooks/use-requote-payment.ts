@@ -19,11 +19,11 @@ import type { CheckoutSession } from "../config/checkout-session";
 export type ConflictStatusRefresh =
   "idle" | "refreshing" | "succeeded" | "failed";
 
-export function useRequotePayment(
+export const useRequotePayment = (
   payment: CreatePaymentResponse,
   session: CheckoutSession,
   assetDecimals: number,
-) {
+) => {
   const queryClient = useQueryClient();
   const [conflictStatusRefresh, setConflictStatusRefresh] =
     useState<ConflictStatusRefresh>("idle");
@@ -87,4 +87,4 @@ export function useRequotePayment(
       mutation.error instanceof ApiProblemError &&
       mutation.error.problem.status === 409,
   } as const;
-}
+};

@@ -10,7 +10,7 @@ import type { PaymentScenarioConfiguration } from "@/features/checkout/api/contr
 import type { PaymentStatus } from "@/features/checkout/api/contracts/payment-status-values";
 import { createPaymentResponseSchema } from "@/features/checkout/api/contracts/payments";
 
-async function expectNoAccessibilityViolations(page: Page): Promise<void> {
+const expectNoAccessibilityViolations = async (page: Page): Promise<void> => {
   const { violations } = await new AxeBuilder({ page }).analyze();
 
   expect(
@@ -22,9 +22,9 @@ async function expectNoAccessibilityViolations(page: Page): Promise<void> {
       )
       .join("\n"),
   ).toEqual([]);
-}
+};
 
-async function createEthereumPayment(page: Page) {
+const createEthereumPayment = async (page: Page) => {
   const responsePromise = page.waitForResponse(
     (response) =>
       response.url().endsWith("/api/payments") &&
@@ -36,13 +36,13 @@ async function createEthereumPayment(page: Page) {
   return createPaymentResponseSchema.parse(
     await (await responsePromise).json(),
   );
-}
+};
 
-async function configureStatus(
+const configureStatus = async (
   request: APIRequestContext,
   paymentReference: string,
   status: PaymentStatus,
-): Promise<void> {
+): Promise<void> => {
   const configuration: PaymentScenarioConfiguration = {
     scenario: { mode: "exact_state", status },
     response_delay_ms: 0,
@@ -55,7 +55,7 @@ async function configureStatus(
     },
   });
   expect(response.ok()).toBe(true);
-}
+};
 
 test("has no automated violations in method selection and active instructions", async ({
   page,

@@ -38,22 +38,24 @@ export class UnavailablePaymentScenarioError extends Error {
   }
 }
 
-function assertNever(value: never): never {
+const assertNever = (value: never): never => {
   throw new Error(`Unhandled payment status: ${String(value)}`);
-}
+};
 
-function isDocumentedUsdtTronPayment(payment: CreatePaymentResponse): boolean {
+const isDocumentedUsdtTronPayment = (
+  payment: CreatePaymentResponse,
+): boolean => {
   return (
     payment.quote.crypto_currency === "USDT" &&
     payment.quote.network === "tron" &&
     payment.quote.total_due === DOCUMENTED_USDT_TRON_TOTAL
   );
-}
+};
 
-function smallestAssetUnit(
+const smallestAssetUnit = (
   payment: CreatePaymentResponse,
   status: typeof PAYMENT_STATUS.underpaid | typeof PAYMENT_STATUS.overpaid,
-): PositiveDecimalString {
+): PositiveDecimalString => {
   const currency = CURRENCIES_FIXTURE.currencies.find(
     (candidate) => candidate.code === payment.quote.crypto_currency,
   );
@@ -68,12 +70,14 @@ function smallestAssetUnit(
   return positiveDecimalStringSchema.parse(
     `0.${"0".repeat(currency.decimals - 1)}1`,
   );
-}
+};
 
-function createUnderpaidAmounts(payment: CreatePaymentResponse): {
+const createUnderpaidAmounts = (
+  payment: CreatePaymentResponse,
+): {
   amountReceived: PositiveDecimalString;
   amountOutstanding: PositiveDecimalString;
-} {
+} => {
   if (isDocumentedUsdtTronPayment(payment)) {
     return {
       amountReceived: DOCUMENTED_UNDERPAID_RECEIVED,
@@ -97,12 +101,14 @@ function createUnderpaidAmounts(payment: CreatePaymentResponse): {
   }
 
   return { amountReceived: amountReceived.data, amountOutstanding };
-}
+};
 
-function createOverpaidAmounts(payment: CreatePaymentResponse): {
+const createOverpaidAmounts = (
+  payment: CreatePaymentResponse,
+): {
   amountReceived: PositiveDecimalString;
   amountExcess: PositiveDecimalString;
-} {
+} => {
   if (isDocumentedUsdtTronPayment(payment)) {
     return {
       amountReceived: DOCUMENTED_OVERPAID_RECEIVED,
@@ -116,16 +122,16 @@ function createOverpaidAmounts(payment: CreatePaymentResponse): {
   );
 
   return { amountReceived, amountExcess };
-}
+};
 
 /**
  * The happy path is derived from the issued quote. A one-confirmation method
  * cannot have a positive intermediate confirmation count, so it moves from
  * detected directly to paid instead of emitting an inconsistent status.
  */
-export function getHappyPathStatuses(
+export const getHappyPathStatuses = (
   payment: CreatePaymentResponse,
-): readonly PaymentStatus[] {
+): readonly PaymentStatus[] => {
   const statuses: PaymentStatus[] = [
     PAYMENT_STATUS.awaiting_payment,
     PAYMENT_STATUS.detected,
@@ -137,13 +143,13 @@ export function getHappyPathStatuses(
 
   statuses.push(PAYMENT_STATUS.paid);
   return statuses;
-}
+};
 
-export function createPaymentStatusUpdate(
+export const createPaymentStatusUpdate = (
   payment: CreatePaymentResponse,
   status: PaymentStatus,
   now = new Date(),
-): PaymentStatusUpdate {
+): PaymentStatusUpdate => {
   const base = { payment_reference: payment.payment_reference };
   const transaction = {
     amount_received: payment.quote.total_due,
@@ -227,4 +233,4 @@ export function createPaymentStatusUpdate(
   }
 
   return paymentStatusUpdateSchema.parse(update);
-}
+};

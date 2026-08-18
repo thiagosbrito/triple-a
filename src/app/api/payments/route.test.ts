@@ -8,15 +8,15 @@ import { POST as REQUOTE } from "./[reference]/requote/route";
 
 import { POST } from "./route";
 
-function paymentRequest(body: string): Request {
+const paymentRequest = (body: string): Request => {
   return new Request("http://localhost/api/payments", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body,
   });
-}
+};
 
-function validPaymentRequest(): Request {
+const validPaymentRequest = (): Request => {
   return paymentRequest(
     JSON.stringify({
       order_id: "ORD-88213",
@@ -24,7 +24,7 @@ function validPaymentRequest(): Request {
       network: "tron",
     }),
   );
-}
+};
 
 beforeEach(() => {
   paymentScenarioStore.clear();

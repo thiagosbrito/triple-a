@@ -14,7 +14,7 @@ const INVALID_REFERENCE_DETAIL =
   "A valid payment_reference query parameter is required.";
 const PAYMENT_NOT_FOUND_DETAIL = "The requested payment was not found.";
 
-function problemResponse(status: 400 | 404, detail: string): Response {
+const problemResponse = (status: 400 | 404, detail: string): Response => {
   const problem =
     status === 400
       ? badRequestProblemSchema.parse({
@@ -34,19 +34,19 @@ function problemResponse(status: 400 | 404, detail: string): Response {
     status,
     headers: { "Content-Type": "application/problem+json" },
   });
-}
+};
 
-function developmentApiIsDisabled(): boolean {
+const developmentApiIsDisabled = (): boolean => {
   return process.env.NODE_ENV === "production";
-}
+};
 
-function paymentReferenceFrom(request: Request) {
+const paymentReferenceFrom = (request: Request) => {
   return paymentReferenceSchema.safeParse(
     new URL(request.url).searchParams.get("payment_reference"),
   );
-}
+};
 
-function metricsResponse(paymentReference: string): Response {
+const metricsResponse = (paymentReference: string): Response => {
   return Response.json(
     paymentRequestMetricsResponseSchema.parse({
       payment_reference: paymentReference,
@@ -54,9 +54,9 @@ function metricsResponse(paymentReference: string): Response {
     }),
     { headers: { "Cache-Control": "no-store" } },
   );
-}
+};
 
-export function GET(request: Request): Response {
+export const GET = (request: Request): Response => {
   if (developmentApiIsDisabled()) {
     return problemResponse(404, PAYMENT_NOT_FOUND_DETAIL);
   }
@@ -72,9 +72,9 @@ export function GET(request: Request): Response {
   }
 
   return metricsResponse(paymentReference.data);
-}
+};
 
-export function DELETE(request: Request): Response {
+export const DELETE = (request: Request): Response => {
   if (developmentApiIsDisabled()) {
     return problemResponse(404, PAYMENT_NOT_FOUND_DETAIL);
   }
@@ -91,4 +91,4 @@ export function DELETE(request: Request): Response {
 
   requestInstrumentation.reset(paymentReference.data);
   return metricsResponse(paymentReference.data);
-}
+};

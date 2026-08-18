@@ -10,10 +10,10 @@ import { useQuoteCountdown } from "./use-quote-countdown";
 
 const START = new Date("2026-08-18T12:00:00.000Z");
 
-function CountdownProbe({
+const CountdownProbe = ({
   expiresAt,
   enabled = true,
-}: Readonly<{ expiresAt: IsoTimestamp; enabled?: boolean }>) {
+}: Readonly<{ expiresAt: IsoTimestamp; enabled?: boolean }>) => {
   const countdown = useQuoteCountdown(expiresAt, enabled);
 
   return (
@@ -21,7 +21,7 @@ function CountdownProbe({
       {formatRemainingMilliseconds(countdown.remainingMilliseconds)}
     </output>
   );
-}
+};
 
 beforeEach(() => {
   vi.useFakeTimers();

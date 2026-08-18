@@ -16,7 +16,7 @@ import {
 const initialTime = new Date("2026-08-14T08:44:02.120Z");
 const laterTime = new Date("2026-08-14T08:47:31.004Z");
 
-function createPayment(currency = "USDT", network = "ethereum") {
+const createPayment = (currency = "USDT", network = "ethereum") => {
   return createMockPayment(
     createPaymentRequestSchema.parse({
       order_id: "ORD-88213",
@@ -25,30 +25,30 @@ function createPayment(currency = "USDT", network = "ethereum") {
     }),
     initialTime,
   );
-}
+};
 
-function exactState(status: string, responseDelayMilliseconds = 0) {
+const exactState = (status: string, responseDelayMilliseconds = 0) => {
   return {
     scenario: { mode: "exact_state", status },
     response_delay_ms: responseDelayMilliseconds,
     failure: { mode: "none" },
   };
-}
+};
 
-function progression(
+const progression = (
   failure:
     | { mode: "none" }
     | {
         mode: "next_request" | "persistent";
         kind: "http_500" | "network_disconnect";
       } = { mode: "none" },
-) {
+) => {
   return {
     scenario: { mode: "progression" },
     response_delay_ms: 0,
     failure,
   };
-}
+};
 
 describe("PaymentScenarioStore", () => {
   let store: PaymentScenarioStore;
@@ -236,6 +236,24 @@ describe("PaymentScenarioStore", () => {
     expect(
       store.getConfiguration(payment.payment_reference).response_delay_ms,
     ).toBe(0);
+    expect(store.peekStatus(payment.payment_reference).status).toBe(
+      "awaiting_payment",
+    );
+  });
+
+  it("moves only the current quote deadline for evaluator control", () => {
+    const payment = createPayment();
+    store.registerPayment(payment, initialTime);
+
+    const updated = store.setQuoteExpiry(
+      payment.payment_reference,
+      12,
+      initialTime,
+    );
+
+    expect(updated.payment_reference).toBe(payment.payment_reference);
+    expect(updated.quote.expires_at).toBe("2026-08-14T08:44:14.120Z");
+    expect(updated.quote.crypto_address).toBe(payment.quote.crypto_address);
     expect(store.peekStatus(payment.payment_reference).status).toBe(
       "awaiting_payment",
     );

@@ -90,17 +90,17 @@ export class UnsupportedPaymentMethodError extends Error {
   }
 }
 
-function fractionDigits(value: string): number {
+const fractionDigits = (value: string): number => {
   return value.split(".")[1]?.length ?? 0;
-}
+};
 
-export function createMockPayment(
+export const createMockPayment = (
   request: CreatePaymentRequest,
   now = new Date(),
   paymentReference: PaymentReference = paymentReferenceSchema.parse(
     MOCK_PAYMENT_REFERENCE,
   ),
-): CreatePaymentResponse {
+): CreatePaymentResponse => {
   if (!isPaymentMethodSupported(CURRENCIES_FIXTURE, request)) {
     throw new UnsupportedPaymentMethodError(request.currency, request.network);
   }
@@ -157,4 +157,4 @@ export function createMockPayment(
       ).toISOString(),
     },
   });
-}
+};

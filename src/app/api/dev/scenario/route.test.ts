@@ -10,7 +10,7 @@ import { GET, PUT } from "./route";
 
 const now = new Date("2026-08-14T08:44:02.120Z");
 
-function registerPayment(currency = "USDT", network = "ethereum") {
+const registerPayment = (currency = "USDT", network = "ethereum") => {
   const payment = createMockPayment(
     createPaymentRequestSchema.parse({
       order_id: "ORD-88213",
@@ -21,21 +21,21 @@ function registerPayment(currency = "USDT", network = "ethereum") {
   );
   paymentScenarioStore.registerPayment(payment, now);
   return payment;
-}
+};
 
-function getRequest(paymentReference: string): Request {
+const getRequest = (paymentReference: string): Request => {
   const url = new URL("http://localhost/api/dev/scenario");
   url.searchParams.set("payment_reference", paymentReference);
   return new Request(url);
-}
+};
 
-function putRequest(body: unknown): Request {
+const putRequest = (body: unknown): Request => {
   return new Request("http://localhost/api/dev/scenario", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-}
+};
 
 beforeEach(() => {
   paymentScenarioStore.clear();

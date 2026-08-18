@@ -5,7 +5,7 @@ import { createMockPayment } from "@/mocks/quote-factory";
 
 type Rgb = Readonly<{ red: number; green: number; blue: number }>;
 
-function relativeLuminance({ red, green, blue }: Rgb): number {
+const relativeLuminance = ({ red, green, blue }: Rgb): number => {
   const linear = [red, green, blue].map((channel) => {
     const normalized = channel / 255;
     return normalized <= 0.04045
@@ -18,9 +18,9 @@ function relativeLuminance({ red, green, blue }: Rgb): number {
     0.7152 * (linear[1] ?? 0) +
     0.0722 * (linear[2] ?? 0)
   );
-}
+};
 
-function contrastRatio(foreground: Rgb, background: Rgb): number {
+const contrastRatio = (foreground: Rgb, background: Rgb): number => {
   const lighter = Math.max(
     relativeLuminance(foreground),
     relativeLuminance(background),
@@ -31,11 +31,11 @@ function contrastRatio(foreground: Rgb, background: Rgb): number {
   );
 
   return (lighter + 0.05) / (darker + 0.05);
-}
+};
 
-async function renderedContrast(locator: Locator): Promise<number> {
+const renderedContrast = async (locator: Locator): Promise<number> => {
   const colors = await locator.evaluate((element) => {
-    function toRgb(cssColor: string): Rgb {
+    const toRgb = (cssColor: string): Rgb => {
       const canvas = document.createElement("canvas");
       canvas.width = 1;
       canvas.height = 1;
@@ -55,7 +55,7 @@ async function renderedContrast(locator: Locator): Promise<number> {
       ).data;
 
       return { red, green, blue };
-    }
+    };
 
     const foreground = toRgb(getComputedStyle(element).color);
     let current: Element | null = element;
@@ -72,7 +72,7 @@ async function renderedContrast(locator: Locator): Promise<number> {
   });
 
   return contrastRatio(colors.foreground, colors.background);
-}
+};
 
 test("keeps the issued quote keyboard- and mobile-safe", async ({ page }) => {
   await page.route("**/api/payments", async (route) => {
@@ -124,11 +124,10 @@ test("keeps the issued quote keyboard- and mobile-safe", async ({ page }) => {
   }));
   expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth);
 
-  const qrBox = await page
-    .getByRole("img", {
-      name: "USDC destination address QR code for Polygon",
-    })
-    .boundingBox();
+  const qrImage = page.getByRole("img", {
+    name: "USDC destination address QR code for Polygon",
+  });
+  const qrBox = await qrImage.boundingBox();
   expect(qrBox).not.toBeNull();
   expect(qrBox?.width).toBeLessThanOrEqual(240);
   expect(qrBox?.width).toBeLessThanOrEqual(layout.clientWidth - 32);
@@ -158,15 +157,34 @@ test("keeps the issued quote keyboard- and mobile-safe", async ({ page }) => {
     await renderedContrast(quoteStatus.locator("p").last()),
   ).toBeGreaterThanOrEqual(4.5);
 
+  await page.setViewportSize({ width: 1_440, height: 1_000 });
+  const transferLabelBox = await instructions
+    .getByText("Transfer instructions")
+    .boundingBox();
+  const countdownBox = await page.getByRole("timer").boundingBox();
+  const qrPanelBox = await qrImage.locator("..").boundingBox();
+
+  expect(transferLabelBox).not.toBeNull();
+  expect(countdownBox).not.toBeNull();
+  expect(qrPanelBox).not.toBeNull();
+  expect(
+    Math.abs((qrPanelBox?.y ?? 0) - (transferLabelBox?.y ?? 0)),
+  ).toBeLessThanOrEqual(1);
+  expect(
+    Math.abs(
+      (qrPanelBox?.y ?? 0) +
+        (qrPanelBox?.height ?? 0) -
+        ((countdownBox?.y ?? 0) + (countdownBox?.height ?? 0)),
+    ),
+  ).toBeLessThanOrEqual(1);
+
   const changeButton = page.getByRole("button", {
     name: "Change payment method",
   });
   await changeButton.focus();
   await page.keyboard.press("Enter");
-  const keepButton = page.getByRole("button", { name: "Keep current quote" });
-  await expect(keepButton).toBeFocused();
-  await page.keyboard.press("Escape");
-  await expect(changeButton).toBeFocused();
+  await expect(page.getByRole("radio")).toHaveCount(6);
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
 });
 
 test("presents a catalog failure as an accessible recoverable error", async ({

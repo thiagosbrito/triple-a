@@ -5,10 +5,10 @@ import { getPaymentStatusPolicy } from "./payment-status";
 export type QuoteDeadlineState =
   "active" | "reconcile" | "expired" | "frozen" | "irrelevant";
 
-export function getRemainingMilliseconds(
+export const getRemainingMilliseconds = (
   expiresAt: IsoTimestamp,
   nowEpochMilliseconds: number,
-): number {
+): number => {
   const expiresAtEpochMilliseconds = Date.parse(expiresAt);
 
   if (!Number.isFinite(nowEpochMilliseconds)) {
@@ -16,11 +16,11 @@ export function getRemainingMilliseconds(
   }
 
   return Math.max(0, expiresAtEpochMilliseconds - nowEpochMilliseconds);
-}
+};
 
-export function formatRemainingMilliseconds(
+export const formatRemainingMilliseconds = (
   remainingMilliseconds: number,
-): string {
+): string => {
   if (!Number.isFinite(remainingMilliseconds) || remainingMilliseconds < 0) {
     throw new RangeError("Remaining time must be a finite non-negative value");
   }
@@ -35,7 +35,7 @@ export function formatRemainingMilliseconds(
   return hours > 0
     ? `${String(hours).padStart(2, "0")}:${minuteText}:${secondText}`
     : `${minuteText}:${secondText}`;
-}
+};
 
 /**
  * Local zero is not authoritative. The first zero observation deactivates the
@@ -43,12 +43,12 @@ export function formatRemainingMilliseconds(
  * payment that remains awaiting after that reconciliation becomes locally
  * expired.
  */
-export function getQuoteDeadlineState(
+export const getQuoteDeadlineState = (
   status: PaymentStatus,
   expiresAt: IsoTimestamp,
   nowEpochMilliseconds: number,
   reconciledAtZero: boolean,
-): QuoteDeadlineState {
+): QuoteDeadlineState => {
   const directive = getPaymentStatusPolicy(status).quoteExpiration;
 
   if (directive !== "active") {
@@ -60,4 +60,4 @@ export function getQuoteDeadlineState(
   }
 
   return reconciledAtZero ? "expired" : "reconcile";
-}
+};

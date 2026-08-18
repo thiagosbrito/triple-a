@@ -15,9 +15,9 @@ import {
   subtractDecimalAmounts,
 } from "./money";
 
-function amount(value: string): NonNegativeDecimalString {
+const amount = (value: string): NonNegativeDecimalString => {
   return nonNegativeDecimalStringSchema.parse(value);
-}
+};
 
 describe("money domain", () => {
   it.each([

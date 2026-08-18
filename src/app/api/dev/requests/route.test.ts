@@ -8,7 +8,7 @@ import { paymentScenarioStore } from "@/mocks/scenario-store";
 
 import { DELETE, GET } from "./route";
 
-function request(reference?: string): Request {
+const request = (reference?: string): Request => {
   const url = new URL("http://localhost/api/dev/requests");
 
   if (reference !== undefined) {
@@ -16,9 +16,9 @@ function request(reference?: string): Request {
   }
 
   return new Request(url);
-}
+};
 
-function registerPayment() {
+const registerPayment = () => {
   const payment = createMockPayment(
     createPaymentRequestSchema.parse({
       order_id: "ORD-88213",
@@ -28,7 +28,7 @@ function registerPayment() {
   );
   paymentScenarioStore.registerPayment(payment);
   return payment;
-}
+};
 
 beforeEach(() => {
   paymentScenarioStore.clear();

@@ -20,7 +20,7 @@ type PaymentRouteContext = {
 const PAYMENT_NOT_FOUND_DETAIL = "The requested payment was not found.";
 const SIMULATED_SERVER_ERROR_DETAIL = "A simulated server error occurred.";
 
-function notFound(): Response {
+const notFound = (): Response => {
   const problem = notFoundProblemSchema.parse({
     type: BAD_REQUEST_PROBLEM_TYPE,
     title: NOT_FOUND_PROBLEM_TITLE,
@@ -32,9 +32,9 @@ function notFound(): Response {
     status: problem.status,
     headers: { "Content-Type": "application/problem+json" },
   });
-}
+};
 
-function simulatedServerError(): Response {
+const simulatedServerError = (): Response => {
   const problem = internalServerErrorProblemSchema.parse({
     type: BAD_REQUEST_PROBLEM_TYPE,
     title: INTERNAL_SERVER_ERROR_PROBLEM_TITLE,
@@ -46,9 +46,9 @@ function simulatedServerError(): Response {
     status: problem.status,
     headers: { "Content-Type": "application/problem+json" },
   });
-}
+};
 
-function simulatedNetworkDisconnect(): Response {
+const simulatedNetworkDisconnect = (): Response => {
   const body = new ReadableStream<Uint8Array>({
     start(controller) {
       controller.error(new TypeError("Simulated network disconnect"));
@@ -61,9 +61,9 @@ function simulatedNetworkDisconnect(): Response {
       "Content-Type": "application/json",
     },
   });
-}
+};
 
-async function waitForConfiguredDelay(milliseconds: number): Promise<void> {
+const waitForConfiguredDelay = async (milliseconds: number): Promise<void> => {
   if (milliseconds === 0) {
     return;
   }
@@ -71,11 +71,11 @@ async function waitForConfiguredDelay(milliseconds: number): Promise<void> {
   await new Promise<void>((resolve) => {
     setTimeout(resolve, milliseconds);
   });
-}
+};
 
-async function respondToInstruction(
+const respondToInstruction = async (
   instruction: PaymentSimulationInstruction,
-): Promise<Response> {
+): Promise<Response> => {
   await waitForConfiguredDelay(instruction.responseDelayMilliseconds);
 
   if (instruction.outcome === "response") {
@@ -85,12 +85,12 @@ async function respondToInstruction(
   return instruction.failureKind === "http_500"
     ? simulatedServerError()
     : simulatedNetworkDisconnect();
-}
+};
 
-export async function GET(
+export const GET = async (
   _request: Request,
   { params }: PaymentRouteContext,
-): Promise<Response> {
+): Promise<Response> => {
   const { reference } = await params;
   const parsedReference = paymentReferenceSchema.safeParse(reference);
 
@@ -117,4 +117,4 @@ export async function GET(
 
     throw error;
   }
-}
+};

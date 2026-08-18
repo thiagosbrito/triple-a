@@ -10,14 +10,14 @@ type MutableRequestMetrics = {
   total_completed: number;
 };
 
-function emptyMetrics(): MutableRequestMetrics {
+const emptyMetrics = (): MutableRequestMetrics => {
   return {
     current_in_flight: 0,
     maximum_in_flight: 0,
     total_started: 0,
     total_completed: 0,
   };
-}
+};
 
 export class RequestInstrumentation {
   readonly #metrics = new Map<string, MutableRequestMetrics>();

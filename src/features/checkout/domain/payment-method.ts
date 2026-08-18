@@ -11,13 +11,13 @@ export interface PaymentMethodSelection {
  * network is only valid when it belongs to the selected currency, even if the
  * same network identifier appears elsewhere in the catalog.
  */
-export function isPaymentMethodSupported(
+export const isPaymentMethodSupported = (
   catalog: CurrenciesResponse,
   selection: PaymentMethodSelection,
-): boolean {
+): boolean => {
   return catalog.currencies.some(
     (currency) =>
       currency.code === selection.currency &&
       currency.networks.some((network) => network.id === selection.network),
   );
-}
+};

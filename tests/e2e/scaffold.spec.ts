@@ -67,16 +67,7 @@ test("serves the API-driven hosted checkout through Next.js", async ({
   await expect(copyAddress).toBeFocused();
 
   await page.getByRole("button", { name: "Change payment method" }).click();
-  const confirmation = page.getByRole("alertdialog", {
-    name: "Confirm payment method change",
-  });
-  await expect(confirmation).toContainText(
-    "Continue only if you have not sent funds",
-  );
-  await page
-    .getByRole("button", { name: "I have not sent funds — change method" })
-    .click();
-
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
   await expect(page.getByRole("status", { name: "Quote created" })).toHaveCount(
     0,
   );

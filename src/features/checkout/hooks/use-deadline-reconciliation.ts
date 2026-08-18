@@ -28,10 +28,10 @@ type ReconciliationState = Readonly<{
   statusUpdate?: PaymentStatusUpdate;
 }>;
 
-export function useDeadlineReconciliation(
+export const useDeadlineReconciliation = (
   payment: CreatePaymentResponse,
   assetDecimals: number,
-) {
+) => {
   const [reconciliation, setReconciliation] = useState<ReconciliationState>({
     phase: "active",
   });
@@ -128,4 +128,4 @@ export function useDeadlineReconciliation(
       refetch: statusQuery.refetch,
     },
   } as const;
-}
+};

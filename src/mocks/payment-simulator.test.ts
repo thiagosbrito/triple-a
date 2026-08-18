@@ -13,7 +13,7 @@ import {
 
 const now = new Date("2026-08-14T08:44:02.120Z");
 
-function createPayment(currency: string, network: string) {
+const createPayment = (currency: string, network: string) => {
   return createMockPayment(
     createPaymentRequestSchema.parse({
       order_id: "ORD-88213",
@@ -22,7 +22,7 @@ function createPayment(currency: string, network: string) {
     }),
     now,
   );
-}
+};
 
 describe("createPaymentStatusUpdate", () => {
   const multiConfirmationPayment = createPayment("USDT", "ethereum");

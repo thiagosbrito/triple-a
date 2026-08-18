@@ -37,7 +37,7 @@ export type ShopperActionClass =
 export type PollingDirective = "continue" | "stop";
 export type QuoteExpirationDirective =
   "active" | "frozen" | "expired" | "irrelevant";
-export type PaymentMethodChangeDirective = "guarded" | "locked";
+export type PaymentMethodChangeDirective = "available" | "locked";
 
 export type PaymentStatusPolicy = Readonly<{
   actionClass: ShopperActionClass;
@@ -51,7 +51,7 @@ export const PAYMENT_STATUS_POLICIES = {
   [PAYMENT_STATUS.awaiting_payment]: {
     actionClass: "shopper_can_act",
     isTerminal: false,
-    methodChange: "guarded",
+    methodChange: "available",
     polling: "continue",
     quoteExpiration: "active",
   },
@@ -106,12 +106,12 @@ export const PAYMENT_STATUS_POLICIES = {
   },
 } as const satisfies Record<PaymentStatus, PaymentStatusPolicy>;
 
-export function getPaymentStatusPolicy(
+export const getPaymentStatusPolicy = (
   status: PaymentStatus,
-): PaymentStatusPolicy {
+): PaymentStatusPolicy => {
   return PAYMENT_STATUS_POLICIES[status];
-}
+};
 
-export function isTerminalPaymentStatus(status: PaymentStatus): boolean {
+export const isTerminalPaymentStatus = (status: PaymentStatus): boolean => {
   return PAYMENT_STATUS_POLICIES[status].isTerminal;
-}
+};

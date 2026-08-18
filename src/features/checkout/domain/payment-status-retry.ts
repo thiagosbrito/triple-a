@@ -4,7 +4,7 @@ export const PAYMENT_STATUS_RETRY_DELAYS_MILLISECONDS = [
   1_000, 2_000, 4_000,
 ] as const;
 
-export function isRetryablePaymentStatusError(error: unknown): boolean {
+export const isRetryablePaymentStatusError = (error: unknown): boolean => {
   if (error instanceof ProtocolError) {
     return false;
   }
@@ -14,19 +14,19 @@ export function isRetryablePaymentStatusError(error: unknown): boolean {
   }
 
   return error instanceof TypeError;
-}
+};
 
-export function shouldRetryPaymentStatus(
+export const shouldRetryPaymentStatus = (
   failureCount: number,
   error: unknown,
-): boolean {
+): boolean => {
   return (
     failureCount < PAYMENT_STATUS_RETRY_DELAYS_MILLISECONDS.length &&
     isRetryablePaymentStatusError(error)
   );
-}
+};
 
-export function getPaymentStatusRetryDelay(failureCount: number): number {
+export const getPaymentStatusRetryDelay = (failureCount: number): number => {
   return (
     PAYMENT_STATUS_RETRY_DELAYS_MILLISECONDS[
       Math.min(
@@ -35,4 +35,4 @@ export function getPaymentStatusRetryDelay(failureCount: number): number {
       )
     ] ?? PAYMENT_STATUS_RETRY_DELAYS_MILLISECONDS[0]
   );
-}
+};

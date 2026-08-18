@@ -1,9 +1,12 @@
 import type { z } from "zod";
 
 import {
+  developmentQuoteExpiryRequestSchema,
+  developmentQuoteExpiryResponseSchema,
   paymentRequestMetricsResponseSchema,
   paymentScenarioControlRequestSchema,
   paymentScenarioControlResponseSchema,
+  type DevelopmentQuoteExpiryResponse,
   type PaymentRequestMetricsResponse,
   type PaymentScenarioConfiguration,
   type PaymentScenarioControlResponse,
@@ -27,28 +30,28 @@ export class DevelopmentApiError extends Error {
   }
 }
 
-async function validatedResponse<T>(
+const validatedResponse = async <T>(
   response: Response,
   schema: z.ZodType<T>,
-): Promise<T> {
+): Promise<T> => {
   if (!response.ok || response.status !== 200) {
     throw new DevelopmentApiError(response.status);
   }
 
   return schema.parse(await response.json());
-}
+};
 
-function referencePath(path: string, reference: PaymentReference): string {
+const referencePath = (path: string, reference: PaymentReference): string => {
   const validReference = paymentReferenceSchema.parse(reference);
   return `${path}?payment_reference=${encodeURIComponent(validReference)}`;
-}
+};
 
-export function createDevelopmentApi(options: DevelopmentApiOptions = {}) {
+export const createDevelopmentApi = (options: DevelopmentApiOptions = {}) => {
   const fetcher: DevelopmentFetch =
     options.fetch ?? ((input, init) => globalThis.fetch(input, init));
 
   return {
-    getScenario(reference: PaymentReference) {
+    getScenario: (reference: PaymentReference) => {
       return fetcher(referencePath("/api/dev/scenario", reference), {
         headers: { Accept: "application/json" },
       }).then((response) =>
@@ -56,10 +59,10 @@ export function createDevelopmentApi(options: DevelopmentApiOptions = {}) {
       );
     },
 
-    async setScenario(
+    setScenario: async (
       reference: PaymentReference,
       configuration: PaymentScenarioConfiguration,
-    ): Promise<PaymentScenarioControlResponse> {
+    ): Promise<PaymentScenarioControlResponse> => {
       const body = paymentScenarioControlRequestSchema.parse({
         payment_reference: reference,
         configuration,
@@ -76,9 +79,29 @@ export function createDevelopmentApi(options: DevelopmentApiOptions = {}) {
       return validatedResponse(response, paymentScenarioControlResponseSchema);
     },
 
-    getRequestMetrics(
+    setQuoteExpiry: async (
       reference: PaymentReference,
-    ): Promise<PaymentRequestMetricsResponse> {
+      expiresInSeconds: number,
+    ): Promise<DevelopmentQuoteExpiryResponse> => {
+      const body = developmentQuoteExpiryRequestSchema.parse({
+        payment_reference: reference,
+        expires_in_seconds: expiresInSeconds,
+      });
+      const response = await fetcher("/api/dev/quote-expiry", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      return validatedResponse(response, developmentQuoteExpiryResponseSchema);
+    },
+
+    getRequestMetrics: (
+      reference: PaymentReference,
+    ): Promise<PaymentRequestMetricsResponse> => {
       return fetcher(referencePath("/api/dev/requests", reference), {
         headers: { Accept: "application/json" },
       }).then((response) =>
@@ -86,9 +109,9 @@ export function createDevelopmentApi(options: DevelopmentApiOptions = {}) {
       );
     },
 
-    resetRequestMetrics(
+    resetRequestMetrics: (
       reference: PaymentReference,
-    ): Promise<PaymentRequestMetricsResponse> {
+    ): Promise<PaymentRequestMetricsResponse> => {
       return fetcher(referencePath("/api/dev/requests", reference), {
         method: "DELETE",
         headers: { Accept: "application/json" },
@@ -97,6 +120,6 @@ export function createDevelopmentApi(options: DevelopmentApiOptions = {}) {
       );
     },
   } as const;
-}
+};
 
 export const developmentApi = createDevelopmentApi();

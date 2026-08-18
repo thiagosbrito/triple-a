@@ -12,12 +12,12 @@ import {
   type ProtocolIssue,
 } from "./contracts/problem";
 
-export function assertPaymentMatchesCheckout(
+export const assertPaymentMatchesCheckout = (
   payment: CreatePaymentResponse,
   session: CheckoutSession,
   assetDecimals: number,
   operation: Extract<ApiOperation, "create_payment" | "requote_payment">,
-): CreatePaymentResponse {
+): CreatePaymentResponse => {
   const issues: ProtocolIssue[] = [];
 
   if (payment.order_id !== session.orderId) {
@@ -89,4 +89,4 @@ export function assertPaymentMatchesCheckout(
   }
 
   return payment;
-}
+};

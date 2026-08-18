@@ -55,9 +55,9 @@ const payment = createPaymentResponseSchema.parse({
   },
 });
 
-function jsonResponse(body: unknown, status = 200): Response {
+const jsonResponse = (body: unknown, status = 200): Response => {
   return Response.json(body, { status });
-}
+};
 
 describe("checkout API", () => {
   it("validates and returns the server-owned currency catalog", async () => {

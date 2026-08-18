@@ -24,35 +24,35 @@ const payment = createMockPayment(
   START,
 );
 
-function wrapper(queryClient: QueryClient) {
-  return function TestQueryProvider({ children }: { children: ReactNode }) {
-    return (
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    );
-  };
-}
+const wrapper = (queryClient: QueryClient) => {
+  const QueryClientTestWrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
 
-function queryClient(): QueryClient {
-  return new QueryClient({
+  QueryClientTestWrapper.displayName = "QueryClientTestWrapper";
+  return QueryClientTestWrapper;
+};
+
+const queryClient = (): QueryClient =>
+  new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-}
 
-function responseFor(update: PaymentStatusUpdate): Response {
+const responseFor = (update: PaymentStatusUpdate): Response => {
   return {
     ok: true,
     status: 200,
     json: () => Promise.resolve(update),
   } as Response;
-}
+};
 
-async function advance(milliseconds: number): Promise<void> {
+const advance = async (milliseconds: number): Promise<void> => {
   await act(async () => {
     await vi.advanceTimersByTimeAsync(milliseconds);
   });
-}
+};
 
-async function flushResponse(): Promise<void> {
+const flushResponse = async (): Promise<void> => {
   await act(async () => {
     await Promise.resolve();
     await Promise.resolve();
@@ -60,7 +60,7 @@ async function flushResponse(): Promise<void> {
     await Promise.resolve();
     await Promise.resolve();
   });
-}
+};
 
 beforeEach(() => {
   vi.useFakeTimers();

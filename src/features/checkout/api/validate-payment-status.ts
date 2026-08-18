@@ -10,14 +10,14 @@ import { assertAmountScale, MoneyError } from "../domain/money";
 
 type DecimalString = NonNegativeDecimalString | PositiveDecimalString;
 
-export function assertPaymentStatusMatchesQuote(
+export const assertPaymentStatusMatchesQuote = (
   update: PaymentStatusUpdate,
   payment: CreatePaymentResponse,
   assetDecimals: number,
-): PaymentStatusUpdate {
+): PaymentStatusUpdate => {
   const issues: ProtocolIssue[] = [];
 
-  function validateAmount(field: string, value: DecimalString): void {
+  const validateAmount = (field: string, value: DecimalString): void => {
     try {
       assertAmountScale(value, assetDecimals);
     } catch (error) {
@@ -30,7 +30,7 @@ export function assertPaymentStatusMatchesQuote(
         path: [field],
       });
     }
-  }
+  };
 
   switch (update.status) {
     case PAYMENT_STATUS.awaiting_payment:
@@ -73,4 +73,4 @@ export function assertPaymentStatusMatchesQuote(
   }
 
   return update;
-}
+};

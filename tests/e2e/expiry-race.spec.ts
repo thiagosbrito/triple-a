@@ -8,7 +8,10 @@ import {
 import { paymentRequestMetricsResponseSchema } from "@/features/checkout/api/contracts/development";
 import { createPaymentResponseSchema } from "@/features/checkout/api/contracts/payments";
 
-async function createAwaitingPayment(page: Page, request: APIRequestContext) {
+const createAwaitingPayment = async (
+  page: Page,
+  request: APIRequestContext,
+) => {
   await page.clock.install({ time: new Date() });
   await page.goto("/");
 
@@ -36,13 +39,13 @@ async function createAwaitingPayment(page: Page, request: APIRequestContext) {
     .toBeGreaterThan(0);
 
   return payment;
-}
+};
 
-async function configureDeadlineResult(
+const configureDeadlineResult = async (
   request: APIRequestContext,
   paymentReference: string,
   status: "detected" | "expired",
-): Promise<void> {
+): Promise<void> => {
   const response = await request.put("/api/dev/scenario", {
     data: {
       payment_reference: paymentReference,
@@ -54,12 +57,12 @@ async function configureDeadlineResult(
     },
   });
   expect(response.ok()).toBe(true);
-}
+};
 
-async function restoreAfterDeadline(page: Page, expiresAt: string) {
+const restoreAfterDeadline = async (page: Page, expiresAt: string) => {
   await page.clock.setSystemTime(new Date(expiresAt).getTime() + 1);
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-}
+};
 
 test("recomputes an expired quote immediately after a background time jump", async ({
   page,

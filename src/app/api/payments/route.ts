@@ -19,7 +19,7 @@ const INVALID_REQUEST_DETAIL =
 const UNAVAILABLE_PAYMENT_METHOD_DETAIL =
   "The selected currency and network combination is not available.";
 
-function badRequest(detail: string): Response {
+const badRequest = (detail: string): Response => {
   const problem = badRequestProblemSchema.parse({
     type: BAD_REQUEST_PROBLEM_TYPE,
     title: BAD_REQUEST_PROBLEM_TITLE,
@@ -31,14 +31,14 @@ function badRequest(detail: string): Response {
     status: problem.status,
     headers: { "Content-Type": "application/problem+json" },
   });
-}
+};
 
-async function parseRequest(
+const parseRequest = async (
   request: Request,
 ): Promise<
   | { success: true; data: CreatePaymentRequest }
   | { success: false; response: Response }
-> {
+> => {
   let body: unknown;
 
   try {
@@ -54,9 +54,9 @@ async function parseRequest(
   }
 
   return { success: true, data: result.data };
-}
+};
 
-export async function POST(request: Request): Promise<Response> {
+export const POST = async (request: Request): Promise<Response> => {
   const parsedRequest = await parseRequest(request);
 
   if (!parsedRequest.success) {
@@ -81,4 +81,4 @@ export async function POST(request: Request): Promise<Response> {
 
     throw error;
   }
-}
+};

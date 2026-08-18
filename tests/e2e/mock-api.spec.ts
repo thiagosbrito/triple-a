@@ -32,40 +32,40 @@ type ScenarioConfiguration = {
 
 const orderId = "ORD-E2E-MOCK-API";
 
-async function createPayment(api: APIRequestContext) {
+const createPayment = async (api: APIRequestContext) => {
   const response = await api.post("/api/payments", {
     data: { order_id: orderId, currency: "USDT", network: "ethereum" },
   });
 
   expect(response.status()).toBe(201);
   return createPaymentResponseSchema.parse(await response.json());
-}
+};
 
-async function configureScenario(
+const configureScenario = async (
   api: APIRequestContext,
   paymentReference: string,
   configuration: ScenarioConfiguration,
-): Promise<void> {
+): Promise<void> => {
   const response = await api.put("/api/dev/scenario", {
     data: { payment_reference: paymentReference, configuration },
   });
 
   expect(response.status()).toBe(200);
-}
+};
 
-function exactState(
+const exactState = (
   status: PaymentStatus,
   options: {
     delay?: number;
     failure?: FailureConfiguration;
   } = {},
-): ScenarioConfiguration {
+): ScenarioConfiguration => {
   return {
     scenario: { mode: "exact_state", status },
     response_delay_ms: options.delay ?? 0,
     failure: options.failure ?? { mode: "none" },
   };
-}
+};
 
 test.describe("deterministic mock API", () => {
   test.describe.configure({ mode: "serial" });

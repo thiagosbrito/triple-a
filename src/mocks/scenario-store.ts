@@ -58,16 +58,16 @@ export class PaymentScenarioNotFoundError extends Error {
   }
 }
 
-function copyConfiguration(
+const copyConfiguration = (
   configuration: PaymentScenarioConfiguration,
-): PaymentScenarioConfiguration {
+): PaymentScenarioConfiguration => {
   return paymentScenarioConfigurationSchema.parse(configuration);
-}
+};
 
-function statusAt(
+const statusAt = (
   statuses: readonly PaymentStatus[],
   index: number,
-): PaymentStatus {
+): PaymentStatus => {
   const status = statuses[index];
 
   if (!status) {
@@ -75,7 +75,7 @@ function statusAt(
   }
 
   return status;
-}
+};
 
 export class PaymentScenarioStore {
   readonly #payments = new Map<string, StoredPaymentScenario>();
@@ -110,6 +110,24 @@ export class PaymentScenarioStore {
 
   getConfiguration(paymentReference: string): PaymentScenarioConfiguration {
     return copyConfiguration(this.#getStored(paymentReference).configuration);
+  }
+
+  setQuoteExpiry(
+    paymentReference: string,
+    expiresInSeconds: number,
+    now = new Date(),
+  ): CreatePaymentResponse {
+    const stored = this.#getStored(paymentReference);
+    const expiresAt = new Date(
+      now.getTime() + expiresInSeconds * 1_000,
+    ).toISOString();
+
+    stored.payment = createPaymentResponseSchema.parse({
+      ...stored.payment,
+      quote: { ...stored.payment.quote, expires_at: expiresAt },
+    });
+
+    return this.getPayment(paymentReference);
   }
 
   peekStatus(paymentReference: string): PaymentStatusUpdate {

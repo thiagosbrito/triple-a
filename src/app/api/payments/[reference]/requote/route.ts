@@ -38,19 +38,19 @@ const PAYMENT_NOT_FOUND_DETAIL = "The requested payment was not found.";
 const UNSAFE_REQUOTE_DETAIL =
   "This payment can no longer be requoted in its current state.";
 
-function problemResponse(problem: {
+const problemResponse = (problem: {
   type: "about:blank" | typeof QUOTE_NOT_EXPIRED_PROBLEM_TYPE;
   title: string;
   status: 400 | 404 | 409;
   detail: string;
-}): Response {
+}): Response => {
   return Response.json(problem, {
     status: problem.status,
     headers: { "Content-Type": "application/problem+json" },
   });
-}
+};
 
-function badRequest(detail: string): Response {
+const badRequest = (detail: string): Response => {
   return problemResponse(
     badRequestProblemSchema.parse({
       type: BAD_REQUEST_PROBLEM_TYPE,
@@ -59,9 +59,9 @@ function badRequest(detail: string): Response {
       detail,
     }),
   );
-}
+};
 
-function notFound(): Response {
+const notFound = (): Response => {
   return problemResponse(
     notFoundProblemSchema.parse({
       type: BAD_REQUEST_PROBLEM_TYPE,
@@ -70,9 +70,9 @@ function notFound(): Response {
       detail: PAYMENT_NOT_FOUND_DETAIL,
     }),
   );
-}
+};
 
-function earlyRequoteConflict(expiresAt: string): Response {
+const earlyRequoteConflict = (expiresAt: string): Response => {
   return problemResponse(
     quoteNotExpiredProblemSchema.parse({
       type: QUOTE_NOT_EXPIRED_PROBLEM_TYPE,
@@ -81,9 +81,9 @@ function earlyRequoteConflict(expiresAt: string): Response {
       detail: `The current quote is valid until ${expiresAt}.`,
     }),
   );
-}
+};
 
-function unsafeRequoteConflict(): Response {
+const unsafeRequoteConflict = (): Response => {
   return problemResponse(
     conflictProblemSchema.parse({
       type: BAD_REQUEST_PROBLEM_TYPE,
@@ -92,11 +92,11 @@ function unsafeRequoteConflict(): Response {
       detail: UNSAFE_REQUOTE_DETAIL,
     }),
   );
-}
+};
 
-async function parseRequest(
+const parseRequest = async (
   request: Request,
-): Promise<RequotePaymentRequest | Response> {
+): Promise<RequotePaymentRequest | Response> => {
   let body: unknown;
 
   try {
@@ -109,12 +109,12 @@ async function parseRequest(
   return parsedBody.success
     ? parsedBody.data
     : badRequest(INVALID_REQUEST_DETAIL);
-}
+};
 
-export async function POST(
+export const POST = async (
   request: Request,
   { params }: RequoteRouteContext,
-): Promise<Response> {
+): Promise<Response> => {
   const { reference } = await params;
   const parsedReference = paymentReferenceSchema.safeParse(reference);
 
@@ -173,4 +173,4 @@ export async function POST(
 
     throw error;
   }
-}
+};

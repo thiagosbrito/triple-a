@@ -15,15 +15,15 @@ import { GET } from "./route";
 
 const now = new Date("2026-08-14T08:44:02.120Z");
 
-function request(reference: string): Request {
+const request = (reference: string): Request => {
   return new Request(`http://localhost/api/payments/${reference}`);
-}
+};
 
-function context(reference: string) {
+const context = (reference: string) => {
   return { params: Promise.resolve({ reference }) };
-}
+};
 
-function createRegisteredPayment() {
+const createRegisteredPayment = () => {
   const payment = createMockPayment(
     createPaymentRequestSchema.parse({
       order_id: "ORD-88213",
@@ -34,9 +34,9 @@ function createRegisteredPayment() {
   );
   paymentScenarioStore.registerPayment(payment, now);
   return payment;
-}
+};
 
-function configuration(
+const configuration = (
   status: string,
   options: {
     responseDelayMilliseconds?: number;
@@ -47,13 +47,13 @@ function configuration(
           kind: "http_500" | "network_disconnect";
         };
   } = {},
-) {
+) => {
   return {
     scenario: { mode: "exact_state", status },
     response_delay_ms: options.responseDelayMilliseconds ?? 0,
     failure: options.failure ?? { mode: "none" },
   };
-}
+};
 
 beforeEach(() => {
   paymentScenarioStore.clear();

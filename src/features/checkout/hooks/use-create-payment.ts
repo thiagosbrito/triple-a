@@ -26,7 +26,7 @@ type PaymentIntent = Readonly<{
   signal: AbortSignal;
 }>;
 
-export function useCreatePayment(session: CheckoutSession) {
+export const useCreatePayment = (session: CheckoutSession) => {
   const queryClient = useQueryClient();
   const [activeReference, setActiveReference] =
     useState<PaymentReference | null>(null);
@@ -113,4 +113,4 @@ export function useCreatePayment(session: CheckoutSession) {
     requestQuote,
     reset,
   } as const;
-}
+};
