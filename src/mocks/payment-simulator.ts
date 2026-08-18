@@ -183,7 +183,7 @@ export const createPaymentStatusUpdate = (
       update = {
         ...base,
         status,
-        confirmations: payment.quote.required_confirmations - 1,
+        confirmations: 1,
         required_confirmations: payment.quote.required_confirmations,
         ...transaction,
       };

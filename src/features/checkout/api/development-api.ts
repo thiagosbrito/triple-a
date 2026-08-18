@@ -1,11 +1,14 @@
 import type { z } from "zod";
 
 import {
+  developmentConfirmationRequestSchema,
+  developmentConfirmationResponseSchema,
   developmentQuoteExpiryRequestSchema,
   developmentQuoteExpiryResponseSchema,
   paymentRequestMetricsResponseSchema,
   paymentScenarioControlRequestSchema,
   paymentScenarioControlResponseSchema,
+  type DevelopmentConfirmationResponse,
   type DevelopmentQuoteExpiryResponse,
   type PaymentRequestMetricsResponse,
   type PaymentScenarioConfiguration,
@@ -97,6 +100,24 @@ export const createDevelopmentApi = (options: DevelopmentApiOptions = {}) => {
       });
 
       return validatedResponse(response, developmentQuoteExpiryResponseSchema);
+    },
+
+    advanceConfirmation: async (
+      reference: PaymentReference,
+    ): Promise<DevelopmentConfirmationResponse> => {
+      const body = developmentConfirmationRequestSchema.parse({
+        payment_reference: reference,
+      });
+      const response = await fetcher("/api/dev/confirmation", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      return validatedResponse(response, developmentConfirmationResponseSchema);
     },
 
     getRequestMetrics: (

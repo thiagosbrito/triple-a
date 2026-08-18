@@ -9,6 +9,7 @@ import { createPaymentRequestSchema } from "@/features/checkout/api/contracts/pa
 import { createMockPayment } from "@/mocks/quote-factory";
 
 import {
+  PaymentConfirmationUnavailableError,
   PaymentScenarioNotFoundError,
   PaymentScenarioStore,
 } from "./scenario-store";
@@ -257,6 +258,56 @@ describe("PaymentScenarioStore", () => {
     expect(store.peekStatus(payment.payment_reference).status).toBe(
       "awaiting_payment",
     );
+  });
+
+  it("records confirmation signals and settles at the required count", () => {
+    const payment = createPayment();
+    store.registerPayment(payment, initialTime);
+    store.configure(
+      payment.payment_reference,
+      exactState(PAYMENT_STATUS.detected),
+      initialTime,
+    );
+
+    expect(store.peekStatus(payment.payment_reference)).toMatchObject({
+      status: "detected",
+      confirmations: 0,
+      required_confirmations: 3,
+    });
+    expect(
+      store.advanceConfirmation(payment.payment_reference, laterTime),
+    ).toMatchObject({ status: "confirming", confirmations: 1 });
+    expect(
+      store.advanceConfirmation(payment.payment_reference, laterTime),
+    ).toMatchObject({ status: "confirming", confirmations: 2 });
+    expect(
+      store.advanceConfirmation(payment.payment_reference, laterTime),
+    ).toMatchObject({ status: "paid", confirmations: 3 });
+    expect(store.getConfiguration(payment.payment_reference).scenario).toEqual({
+      mode: "exact_state",
+      status: "paid",
+    });
+    expect(() =>
+      store.advanceConfirmation(payment.payment_reference, laterTime),
+    ).toThrow(PaymentConfirmationUnavailableError);
+  });
+
+  it("settles a one-confirmation payment on its first signal", () => {
+    const payment = createPayment("USDT", "tron");
+    store.registerPayment(payment, initialTime);
+    store.configure(
+      payment.payment_reference,
+      exactState(PAYMENT_STATUS.detected),
+      initialTime,
+    );
+
+    expect(
+      store.advanceConfirmation(payment.payment_reference, laterTime),
+    ).toMatchObject({
+      status: "paid",
+      confirmations: 1,
+      required_confirmations: 1,
+    });
   });
 
   it("throws a typed error for an unknown reference", () => {

@@ -8,7 +8,9 @@ import {
   checkoutQueryKeys,
 } from "../../api/checkout-query-keys";
 import type { PaymentScenarioConfiguration } from "../../api/contracts/development";
+import { PAYMENT_STATUS } from "../../api/contracts/payment-status-values";
 import type { PaymentReference } from "../../api/contracts/primitives";
+import { DevelopmentConfirmationControl } from "./development-confirmation-control";
 import { DevelopmentQuoteExpiryControl } from "./development-quote-expiry-control";
 import { DevelopmentRequestDiagnostics } from "./development-request-diagnostics";
 import { DevelopmentScenarioForm } from "./development-scenario-form";
@@ -64,6 +66,25 @@ export const DevelopmentScenarioPanel = ({
       );
     },
   });
+  const advanceConfirmation = useMutation({
+    mutationKey:
+      checkoutMutationKeys.advanceDevelopmentConfirmation(paymentReference),
+    mutationFn: () => developmentApi.advanceConfirmation(paymentReference),
+    onSuccess: async (response) => {
+      queryClient.setQueryData(
+        checkoutQueryKeys.developmentScenario(paymentReference),
+        {
+          payment_reference: response.payment_reference,
+          configuration: response.configuration,
+        },
+      );
+      await queryClient.refetchQueries({
+        queryKey: checkoutQueryKeys.paymentStatus(paymentReference),
+        exact: true,
+        type: "active",
+      });
+    },
+  });
   const resetMetrics = useMutation({
     mutationKey:
       checkoutMutationKeys.resetDevelopmentRequestMetrics(paymentReference),
@@ -93,6 +114,18 @@ export const DevelopmentScenarioPanel = ({
         isError={updateScenario.isError}
         onApply={(configuration) => updateScenario.mutate(configuration)}
       />
+      {scenario.data?.configuration.scenario.mode === "exact_state" &&
+      (scenario.data.configuration.scenario.status ===
+        PAYMENT_STATUS.detected ||
+        scenario.data.configuration.scenario.status ===
+          PAYMENT_STATUS.confirming) ? (
+        <DevelopmentConfirmationControl
+          isPending={advanceConfirmation.isPending}
+          isError={advanceConfirmation.isError}
+          result={advanceConfirmation.data}
+          onAdvance={() => advanceConfirmation.mutate()}
+        />
+      ) : null}
       <DevelopmentQuoteExpiryControl
         isPending={updateQuoteExpiry.isPending}
         isSuccess={updateQuoteExpiry.isSuccess}

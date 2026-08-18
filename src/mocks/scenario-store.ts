@@ -58,6 +58,13 @@ export class PaymentScenarioNotFoundError extends Error {
   }
 }
 
+export class PaymentConfirmationUnavailableError extends Error {
+  constructor(readonly paymentReference: string) {
+    super(`Payment ${paymentReference} is not waiting for a confirmation`);
+    this.name = "PaymentConfirmationUnavailableError";
+  }
+}
+
 const copyConfiguration = (
   configuration: PaymentScenarioConfiguration,
 ): PaymentScenarioConfiguration => {
@@ -134,6 +141,56 @@ export class PaymentScenarioStore {
     return paymentStatusUpdateSchema.parse(
       this.#getStored(paymentReference).currentUpdate,
     );
+  }
+
+  advanceConfirmation(
+    paymentReference: string,
+    now = new Date(),
+  ): PaymentStatusUpdate {
+    const stored = this.#getStored(paymentReference);
+    const currentUpdate = stored.currentUpdate;
+
+    if (
+      currentUpdate.status !== PAYMENT_STATUS.detected &&
+      currentUpdate.status !== PAYMENT_STATUS.confirming
+    ) {
+      throw new PaymentConfirmationUnavailableError(paymentReference);
+    }
+
+    if (currentUpdate.status === PAYMENT_STATUS.detected) {
+      stored.currentUpdate = createPaymentStatusUpdate(
+        stored.payment,
+        currentUpdate.required_confirmations === 1
+          ? PAYMENT_STATUS.paid
+          : PAYMENT_STATUS.confirming,
+        now,
+      );
+    } else {
+      const nextConfirmation = currentUpdate.confirmations + 1;
+
+      stored.currentUpdate =
+        nextConfirmation >= currentUpdate.required_confirmations
+          ? createPaymentStatusUpdate(stored.payment, PAYMENT_STATUS.paid, now)
+          : paymentStatusUpdateSchema.parse({
+              ...currentUpdate,
+              confirmations: nextConfirmation,
+            });
+    }
+
+    if (
+      stored.currentUpdate.status === PAYMENT_STATUS.confirming ||
+      stored.currentUpdate.status === PAYMENT_STATUS.paid
+    ) {
+      stored.configuration = {
+        ...stored.configuration,
+        scenario: {
+          mode: PAYMENT_SCENARIO_MODES[0],
+          status: stored.currentUpdate.status,
+        },
+      };
+    }
+
+    return this.peekStatus(paymentReference);
   }
 
   configure(

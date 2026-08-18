@@ -56,7 +56,7 @@ describe("createPaymentStatusUpdate", () => {
     );
 
     expect(confirming).toMatchObject({
-      confirmations: 2,
+      confirmations: 1,
       required_confirmations: 3,
     });
     expect(paid).toMatchObject({

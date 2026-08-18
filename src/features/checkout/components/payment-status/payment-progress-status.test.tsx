@@ -64,11 +64,11 @@ describe("PaymentProgressStatus", () => {
     );
 
     const status = screen.getByRole("status", { name: "Payment confirming" });
-    expect(status).toHaveTextContent("5 of 6");
+    expect(status).toHaveTextContent("1 of 6");
     expect(status).toHaveTextContent(
       "Do not send another payment while network confirmations are in progress",
     );
-    expect(screen.getByRole("progressbar")).toHaveAttribute("value", "5");
+    expect(screen.getByRole("progressbar")).toHaveAttribute("value", "1");
     expect(screen.getByRole("progressbar")).toHaveAttribute("max", "6");
   });
 });

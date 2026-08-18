@@ -89,3 +89,46 @@ test("moves one shopper payment from awaiting through paid and stops polling", a
     total_completed: 0,
   });
 });
+
+test("advances detected funds one confirmation signal at a time", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .locator('label:has(input[aria-label="USDT on Ethereum (ERC-20)"])')
+    .click();
+  await expect(
+    page.getByRole("region", { name: "Send exactly" }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: /^Dev tools/u }).click();
+  const controls = page.getByRole("complementary", {
+    name: "Development scenario controls",
+  });
+  await controls.getByLabel("Payment state").selectOption("detected");
+  await controls.getByRole("button", { name: "Apply scenario" }).click();
+
+  await expect(
+    page.getByRole("status", { name: "Payment detected" }),
+  ).toContainText("zero confirmations", { timeout: 5_000 });
+
+  const sendConfirmation = controls.getByRole("button", {
+    name: "Send next confirmation",
+  });
+  await sendConfirmation.click();
+
+  const confirming = page.getByRole("status", {
+    name: "Payment confirming",
+  });
+  await expect(confirming).toContainText("1 of 3", { timeout: 5_000 });
+
+  await sendConfirmation.click();
+  await expect(confirming).toContainText("2 of 3");
+  await expect(controls).toContainText("Confirmation recorded: 2 of 3.");
+
+  await sendConfirmation.click();
+  await expect(
+    page.getByRole("status", { name: "Payment complete" }),
+  ).toContainText("settled successfully", { timeout: 5_000 });
+  await expect(sendConfirmation).toHaveCount(0);
+});

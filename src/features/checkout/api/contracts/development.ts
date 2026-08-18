@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+import {
+  paymentStatusUpdateSchema,
+  type PaymentStatusUpdate,
+} from "./payment-status";
 import { paymentStatusSchema } from "./payment-status-values";
 import { createPaymentResponseSchema } from "./payments";
 import { paymentReferenceSchema } from "./primitives";
@@ -60,6 +64,16 @@ export const developmentQuoteExpiryResponseSchema = z.strictObject({
   payment: createPaymentResponseSchema,
 });
 
+export const developmentConfirmationRequestSchema = z.strictObject({
+  payment_reference: paymentReferenceSchema,
+});
+
+export const developmentConfirmationResponseSchema = z.strictObject({
+  payment_reference: paymentReferenceSchema,
+  configuration: paymentScenarioConfigurationSchema,
+  update: paymentStatusUpdateSchema,
+});
+
 export const requestMetricsSchema = z.strictObject({
   current_in_flight: z.int().nonnegative(),
   maximum_in_flight: z.int().nonnegative(),
@@ -87,6 +101,13 @@ export type DevelopmentQuoteExpiryRequest = z.infer<
 export type DevelopmentQuoteExpiryResponse = z.infer<
   typeof developmentQuoteExpiryResponseSchema
 >;
+export type DevelopmentConfirmationRequest = z.infer<
+  typeof developmentConfirmationRequestSchema
+>;
+export type DevelopmentConfirmationResponse = Omit<
+  z.infer<typeof developmentConfirmationResponseSchema>,
+  "update"
+> & { update: PaymentStatusUpdate };
 export type RequestMetrics = z.infer<typeof requestMetricsSchema>;
 export type PaymentRequestMetricsResponse = z.infer<
   typeof paymentRequestMetricsResponseSchema

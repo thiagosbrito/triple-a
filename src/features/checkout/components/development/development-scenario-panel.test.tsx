@@ -3,6 +3,8 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { developmentApi } from "../../api/development-api";
+import type { PaymentScenarioControlResponse } from "../../api/contracts/development";
+import { paymentStatusUpdateSchema } from "../../api/contracts/payment-status";
 import type { CreatePaymentResponse } from "../../api/contracts/payments";
 import { paymentReferenceSchema } from "../../api/contracts/primitives";
 import {
@@ -34,8 +36,11 @@ const emptyMetrics = {
   },
 };
 
-const renderPanel = (onClose = vi.fn()) => {
-  vi.spyOn(developmentApi, "getScenario").mockResolvedValue(defaultScenario);
+const renderPanel = (
+  onClose = vi.fn(),
+  scenarioResponse: PaymentScenarioControlResponse = defaultScenario,
+) => {
+  vi.spyOn(developmentApi, "getScenario").mockResolvedValue(scenarioResponse);
   vi.spyOn(developmentApi, "getRequestMetrics").mockResolvedValue(emptyMetrics);
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -166,6 +171,45 @@ describe("DevelopmentScenarioPanel", () => {
         failure: { mode: "none" },
       }),
     );
+  });
+
+  it("sends confirmation signals while the exact confirming state is active", async () => {
+    const confirmingScenario = {
+      payment_reference: paymentReference,
+      configuration: {
+        scenario: {
+          mode: "exact_state" as const,
+          status: "confirming" as const,
+        },
+        response_delay_ms: 0,
+        failure: { mode: "none" as const },
+      },
+    };
+    const advanceConfirmation = vi
+      .spyOn(developmentApi, "advanceConfirmation")
+      .mockResolvedValue({
+        ...confirmingScenario,
+        update: paymentStatusUpdateSchema.parse({
+          payment_reference: paymentReference,
+          status: "confirming",
+          confirmations: 2,
+          required_confirmations: 3,
+          amount_received: "163.69",
+          tx_hash: "9d1f4c8a2be7...",
+        }),
+      });
+    renderPanel(vi.fn(), confirmingScenario);
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Send next confirmation" }),
+    );
+
+    await waitFor(() =>
+      expect(advanceConfirmation).toHaveBeenCalledWith(paymentReference),
+    );
+    expect(
+      await screen.findByText("Confirmation recorded: 2 of 3."),
+    ).toBeInTheDocument();
   });
 
   it("resets backend request metrics through the dedicated control", async () => {

@@ -33,6 +33,12 @@ export const checkoutMutationKeys = {
       "set-development-quote-expiry",
       reference,
     ] as const,
+  advanceDevelopmentConfirmation: (reference: PaymentReference) =>
+    [
+      ...checkoutMutationKeys.all,
+      "advance-development-confirmation",
+      reference,
+    ] as const,
   resetDevelopmentRequestMetrics: (reference: PaymentReference) =>
     [
       ...checkoutMutationKeys.all,
