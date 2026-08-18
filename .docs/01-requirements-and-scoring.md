@@ -76,7 +76,7 @@ omit a mandatory requirement; it determines implementation and testing effort.
 | DR-04 | Design document: decimal precision strategy | Money section in `04-technical-architecture.md`; ADR-0004 |
 | DR-05 | Design document: shopper-facing failure handling | Failure-handling matrix in `04-technical-architecture.md` |
 | DR-06 | Design document: one defended decision or first future change | Status-before-expiry reconciliation decision in `04-technical-architecture.md` |
-| DR-07 | ADRs | Four accepted, implementation-reviewed ADRs linked from `06-decision-register.md` |
+| DR-07 | ADRs | Five accepted, implementation-reviewed ADRs linked from `06-decision-register.md` |
 | DR-08 | README | Exact prerequisites, install, run, and verification commands |
 | DR-09 | README | UI and HTTP instructions for every status, slow response, and network failure |
 | DR-10 | README | Explicit omission and prioritization table |

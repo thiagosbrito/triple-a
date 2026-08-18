@@ -112,6 +112,8 @@ the quote is issued, its compact development-only controls open beside the
 checkout on desktop and as a bottom sheet on small screens. Its sections can:
 
 - pin any of the eight lifecycle states or run happy-path progression;
+- emit one mock network confirmation at a time while exact `detected` or
+  `confirming` state is active;
 - delay status responses from 0 to 30,000 milliseconds;
 - trigger the next request or every request as HTTP 500 or a simulated network
   disconnect;
@@ -121,6 +123,9 @@ checkout on desktop and as a bottom sheet on small screens. Its sections can:
 Choose lifecycle and transport values and press **Apply scenario**. The current
 payment status is refreshed immediately, including after polling has stopped in
 a terminal state. Quote expiry has its own **Update quote deadline** action.
+When exact `detected` or `confirming` is active, **Send next confirmation**
+increments the visible count. The first signal moves zero-confirmation detected
+funds to confirming, and the required signal changes the mock payment to `paid`.
 Press Escape or use the labelled close button to return focus to the launcher.
 The controls are absent from the production experience and all development
 endpoints return 404 when `NODE_ENV=production`.

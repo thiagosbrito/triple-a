@@ -1496,3 +1496,40 @@ checksum-verified Node 24.19.0 binary. This preserved the candidate's session
 while keeping the final runtime claim accurate. Repository scans found no
 tracked generated artifacts, credential signatures, or references to private
 presentation material.
+
+## 2026-08-18 - Development singleton survives a stale hot-reload shape
+
+While rehearsing quote-expiry controls, the candidate found that Next.js had
+preserved a process-global scenario-store instance created before
+`setQuoteExpiry` existed. The refreshed route imported the new class definition
+but called the obsolete runtime object, producing a `TypeError`. The singleton
+now carries an explicit runtime-shape version and is recreated when that version
+is missing or stale. This keeps ordinary development reload persistence while
+preventing an old class shape from surviving an incompatible store change; the
+one affected in-memory checkout must be recreated after such a reset.
+
+## 2026-08-18 - Candidate finds paused offline deadline reconciliation
+
+During a real Chromium offline rehearsal, the candidate found the checkout
+could remain on "Checking payment status" indefinitely after the quote deadline.
+TanStack Query's default online network mode paused the deadline refetch rather
+than rejecting it, so the reconciliation promise never reached the existing
+safe unavailable state. Payment-status requests now use `networkMode: "always"`
+so an offline fetch follows the bounded transport-retry policy and settles as
+unavailable. That state keeps transfer instructions inactive, does not claim
+expiry or failure, and exposes a manual status retry that re-enters the same
+authoritative reconciliation path. A hook regression and a real Chromium
+offline/reconnect journey cover the reported behavior.
+
+## 2026-08-18 - Candidate requests explicit confirmation signals
+
+During presentation rehearsal, the candidate noted that pinning the mock to
+`confirming` left the checkout waiting without an evaluator action that
+represented the next blockchain confirmation. The candidate then corrected the
+first proposal: `detected` must remain at zero rather than receiving a
+confirmation implicitly. Exact detected and confirming states now expose a
+development-only "Send next confirmation" action. The first request moves a
+multi-confirmation payment from detected zero to confirming one; later requests
+advance the stored count through the validated HTTP endpoint. Reaching the
+quote's required count changes the mock payment to `paid` and removes the
+action. A one-confirmation payment moves directly from detected to paid.

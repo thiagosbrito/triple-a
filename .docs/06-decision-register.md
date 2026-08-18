@@ -3,7 +3,7 @@
 Status: Final accepted set; implementation consequences reviewed 2026-08-18
 Scope: Submission decision summary
 
-The foundation was accepted on 2026-08-17. The four consequential decisions
+The foundation was accepted on 2026-08-17. The five consequential decisions
 below are extracted as individual accepted ADRs and were reviewed against the
 implemented checkout on 2026-08-18:
 
@@ -13,6 +13,7 @@ implemented checkout on 2026-08-18:
 | [ADR-0002](adrs/0002-tanstack-query-owns-remote-payment-state.md) | Accepted and verified | Query is the only remote-state owner; no Redux dependency or mirrored quote/status store exists. |
 | [ADR-0003](adrs/0003-reconcile-status-before-local-expiry.md) | Accepted and verified | Both authoritative expiry and detection-winning-the-race pass browser verification. |
 | [ADR-0004](adrs/0004-decimal-strings-and-arbitrary-precision.md) | Accepted and verified | Branded decimal strings and strict arbitrary-precision operations preserve six- and eighteen-decimal values. |
+| [ADR-0005](adrs/0005-immediate-lifecycle-transitions-over-decorative-motion.md) | Accepted and verified | Authoritative lifecycle content changes immediately; decorative motion was deferred in favor of complete, verified payment and failure flows. |
 
 ## ADR-0001: Next.js and colocated mock API
 
@@ -151,6 +152,34 @@ Choose option 3.
 - Values supplied by the server should be displayed directly where possible
   rather than needlessly recomputed.
 
+## ADR-0005: Immediate lifecycle transitions over decorative motion
+
+### Context
+
+The time-boxed assessment scores lifecycle correctness, shopper safety, adverse
+conditions, and explainability. Bespoke state animation was neither required
+nor worth reducing verification time for critical payment behavior.
+
+### Options
+
+1. Bespoke animation for every lifecycle transition.
+2. One generic animated wrapper around status changes.
+3. Immediate semantic state changes with only nonessential micro-transitions.
+
+### Accepted decision
+
+Choose option 3. Never delay or overlap authoritative payment instructions and
+safety actions for decoration. Any minor motion must respect reduced-motion
+preferences.
+
+### Accepted consequences
+
+- The assessment UI is deliberately less animated than a production brand pass.
+- Complete working flows and failure behavior receive the available engineering
+  and verification time.
+- Future motion requires a design specification, usability validation, and
+  proof that critical content, focus, and announcements remain immediate.
+
 ## Decisions that do not currently merit an ADR
 
 - Tailwind CSS: an implementation preference without a substantial domain
@@ -198,6 +227,8 @@ All foundation decisions remain accepted after implementation review:
 - [x] Decimal strings and arbitrary-precision arithmetic.
 - [x] Terminal-state classification, with `underpaid` explicitly non-terminal.
 - [x] Fixed issued payment method with direct awaiting-state replacement.
+- [x] Immediate lifecycle transitions, with decorative motion explicitly
+      deferred until it can be added without weakening safety or accessibility.
 - [x] pnpm 11.22.0 as the exact package-manager version.
 - [x] Node.js 24.19.0 LTS, `big.js`, local SVG QR generation, Vitest + Testing
       Library, and Playwright.

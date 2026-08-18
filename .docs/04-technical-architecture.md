@@ -128,6 +128,7 @@ src/
       payments/[reference]/route.ts
       payments/[reference]/requote/route.ts
       dev/scenario/route.ts
+      dev/confirmation/route.ts
       dev/requests/route.ts
       dev/quote-expiry/route.ts
     page.tsx
@@ -190,6 +191,7 @@ src/
         development-scenario-form-model.ts
         development-payment-state-fields.tsx
         development-network-condition-fields.tsx
+        development-confirmation-control.tsx
         development-quote-expiry-control.tsx
         development-request-diagnostics.tsx
         development-tools-shell.tsx
@@ -649,6 +651,15 @@ from `detected` directly to `paid`; multi-confirmation methods include
 covered independently at the contract boundary instead of being combined into
 an unsafe live scenario.
 
+While exact `detected` or `confirming` state is active, a dedicated evaluator
+action emits one mock network-confirmation signal through
+`POST /api/dev/confirmation`. The first signal changes detected funds from zero
+confirmations to `confirming` at one; each later signal increments the validated
+status payload, and the signal that reaches the issued quote's
+`required_confirmations` atomically changes the stored status to `paid`. A
+one-confirmation method moves directly from `detected` to `paid`. The action is
+unavailable in every other lifecycle state.
+
 Orthogonal transport controls:
 
 - response delay in milliseconds;
@@ -682,7 +693,9 @@ importing the mock store.
 development panel and automated HTTP checks. They are available only when
 `NODE_ENV` is not `production`, use no-store responses, and require a registered
 payment reference. `POST /api/dev/quote-expiry` follows the same production
-exclusion and reference-validation policy. The status route models a network
+exclusion and reference-validation policy. `POST /api/dev/confirmation`
+additionally requires the stored authoritative mock state to be `detected` or
+`confirming` and returns HTTP 409 otherwise. The status route models a network
 disconnect with an errored response stream; real Next.js verification produces
 an empty client reply and
 an expected server-side pipe error rather than a lifecycle payload.

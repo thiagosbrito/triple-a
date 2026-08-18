@@ -44,7 +44,7 @@ Implemented and verified:
 - Mock API strategy.
 - Decimal, failure, accessibility, and security policies.
 - Risk-focused verification strategy.
-- Four accepted, implementation-reviewed ADRs.
+- Five accepted, implementation-reviewed ADRs.
 - Critical lifecycle, recovery, method-commitment, and accessibility browser
   journeys.
 

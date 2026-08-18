@@ -1237,7 +1237,7 @@ Next: M7-01
 | ID | Task | Depends on | Status | Owner | Acceptance gate / evidence |
 | --- | --- | --- | --- | --- | --- |
 | M7-01 | Finalize design document and diagrams against implemented behavior. | M6-07 | `DONE` | Lead | Final implemented design includes accurate component/data-flow and lifecycle diagrams, countdown, money, failure handling, accessibility evidence, limitations, and the expiry-reconciliation decision to defend. |
-| M7-02 | Finalize ADR statuses and observed consequences. | M6-07 | `DONE` | Lead | Four accepted ADRs now include implementation evidence, observed costs, and concrete review triggers; the final register links them and removes extraction-pending language. |
+| M7-02 | Finalize ADR statuses and observed consequences. | M6-07 | `DONE` | Lead | Five accepted ADRs now include implementation evidence, observed costs, and concrete review triggers; the final register links them and removes extraction-pending language. |
 | M7-03 | Complete README run, scenario, dropped-work, and agent sections. | M6-07 | `DONE` | Lead + candidate | README matches actual boundaries and controls, lists deliberate omissions/impact, records three factual rejected agent outputs plus candidate improvements/lifecycle clarification, and a fresh local clone passes frozen install and typecheck after fixing a generated-type dependency. |
 | M7-04 | Recheck React/Next advisories and dependency audit. | M7-01..M7-03 | `DONE` | Lead | Official advisories/support and registry tags confirm Next 16.3.1, React/React DOM 19.2.8, and pnpm 11.22.0 remain current stable; Node was raised to 24.19.0 after the July 29 security release; audit is zero across 560 dependencies. |
 | M7-05 | Run complete build, typecheck, lint, unit/integration, browser, and accessibility verification. | M7-04 | `DONE` | Lead | Checksum-verified Node 24.19.0 gate passes formatting, lint, typecheck, 374 Vitest tests, production build, 22 Chromium journeys, accessibility matrix, and zero-finding audit after candidate refinements. |
@@ -1270,7 +1270,7 @@ Next: M7-02
 Task: M7-02
 Status: DONE
 Owner: Lead
-Files: four accepted ADRs; final decision register; architecture correction;
+Files: five accepted ADRs; final decision register; architecture correction;
        tracker; discussion record
 Checks: implementation/source audit; ADR status and stale-language search;
         Prettier; git diff --check
@@ -1395,7 +1395,7 @@ time budget requires it.
 
 | Item | Status | Reason / reconsideration trigger |
 | --- | --- | --- |
-| Decorative animation | `DEFERRED` | Reconsider only after all critical verification passes. |
+| Decorative animation | `DEFERRED` | ADR-0005 prioritizes immediate, verified lifecycle communication; reconsider only with a production motion specification and no safety/accessibility regression. |
 | Blockchain explorer links | `DEFERRED` | API provides no authoritative explorer URL/network mapping. |
 | Real wallet integration | `DEFERRED` | Explicitly out of scope. |
 | Server-clock correction beyond absolute `expires_at` | `DEFERRED` | Reconsider if a reliable HTTP `Date` offset is simple and tested. |
