@@ -46,14 +46,15 @@ Only the lead agent updates task status. At most one critical-path task may be
 
 ### Next task
 
-`M2-03` — Implement the payment scenario store and simulator after the approved
-M2-02 slice is committed locally.
+`M2-04` — Implement `GET /api/payments/:reference` after the approved M2-03
+slice is committed locally.
 
 Milestone M1 is committed and verified. Contracts, lifecycle presentation,
 exact money handling, deadline reconciliation, polling policy, and all supplied
-PDF fixtures are covered. M2-01 is committed locally as `5d47f7d`; the candidate
-approved the verified M2-02 commit strategy. Shopper-facing feature work has not
-started.
+PDF fixtures are covered. M2-01 is committed locally as `5d47f7d`, and M2-02 is
+committed locally as `c4be2d9`. M2-03 has passed verification and awaits the
+approved local commit. The candidate authorized autonomous completion of the
+remaining M2 milestone. Shopper-facing feature work has not started.
 
 ## Milestone M0 — Design gates and repository foundation
 
@@ -394,8 +395,8 @@ After schemas/interfaces are frozen by the lead:
 | --- | --- | --- | --- | --- | --- |
 | M2-01 | Implement validated currency fixtures and `GET /api/currencies`. | M1-09 | `DONE` | Lead | Runtime-validated fixture and HTTP route return all six documented combinations; four focused tests, full checks, production build, and live HTTP verification pass. |
 | M2-02 | Implement quote factory and `POST /api/payments`. | M2-01 | `DONE` | Lead | All six catalog methods produce validated, internally consistent quotes with exact decimal totals and three-minute expiry; malformed or unavailable selections return typed 400 problems; focused/full tests, build, and live HTTP checks pass. |
-| M2-03 | Implement payment scenario store/simulator. | M1-09 | `READY` | Unassigned | Exact-state and deterministic progression modes; no UI imports. |
-| M2-04 | Implement `GET /api/payments/:reference`. | M2-03 | `BLOCKED` | Unassigned | All eight states, delay, one-shot failure, and persistent failure are triggerable. |
+| M2-03 | Implement payment scenario store/simulator. | M1-09 | `DONE` | Lead | Exact-state and quote-consistent deterministic progression modes, stable status snapshots, validated delay/failure controls, and server-only store integration pass focused and full verification. |
+| M2-04 | Implement `GET /api/payments/:reference`. | M2-03 | `READY` | Unassigned | All eight states, delay, one-shot failure, and persistent failure are triggerable. |
 | M2-05 | Implement requote route and 409 behavior. | M2-02, M2-03 | `BLOCKED` | Unassigned | Same reference; complete replacement quote; typed early-requote conflict. |
 | M2-06 | Add development request instrumentation for concurrency evidence. | M2-04 | `BLOCKED` | Unassigned | Tests can observe maximum in-flight polls without production UI coupling. |
 | M2-07 | Add route/contract integration tests and commit. | M2-01..M2-06 | `BLOCKED` | Lead | Every assessment condition is reachable through HTTP. |
@@ -447,6 +448,30 @@ Risks/assumptions: five non-PDF method profiles use clearly synthetic,
                    the same Node 24 major
 Commit strategy: approved by the candidate on 2026-08-18
 Next: M2-03
+```
+
+### M2-03 evidence
+
+```text
+Task: M2-03
+Status: DONE
+Owner: Lead
+Files: src/mocks/payment-simulator.ts and focused test;
+       src/mocks/scenario-store.ts and focused test;
+       payment-creation route registration and focused test;
+       open-question, architecture, execution, and discussion documentation
+Checks: pnpm exec vitest run <simulator, store, and payment-route tests>;
+        pnpm typecheck; pnpm check; pnpm build; git diff --check
+Results: 42 focused tests and all 213 repository tests passed; formatting,
+         ESLint, strict TypeScript, and production build passed
+Requirements: PR-17 groundwork; M2-03 acceptance gate
+Risks/assumptions: the store is intentionally process-local and mock-only;
+                   one-confirmation methods skip the impossible confirming
+                   intermediate state; the network-disconnect instruction is
+                   modeled but its route-level feasibility belongs to M2-04;
+                   host Node remains 24.16.0 versus the declared 24.18.0
+Commit strategy: approved by the candidate on 2026-08-18
+Next: M2-04
 ```
 
 ### M2 safe parallelism

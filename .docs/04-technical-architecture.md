@@ -431,12 +431,29 @@ support two modes:
 1. **Exact state:** pin the payment to one documented status.
 2. **Progression:** advance through an explicit sequence for the happy path.
 
+Status payloads are generated from the stored issued quote so amount, address,
+and confirmation metadata remain coherent. Because a one-confirmation method
+has no valid positive intermediate confirmation count, its happy path advances
+from `detected` directly to `paid`; multi-confirmation methods include
+`confirming`. Literal source examples that conflict with one another remain
+covered independently at the contract boundary instead of being combined into
+an unsafe live scenario.
+
 Orthogonal transport controls:
 
 - response delay in milliseconds;
 - fail the next request;
 - persistent failure mode;
 - selectable HTTP 500 versus simulated network disconnect where feasible.
+
+The committed store defaults each newly created payment to an exact
+`awaiting_payment` state. Re-registering the assessment's deterministic
+reference replaces its prior mock session and resets all controls. Delay is
+validated from zero through 30 seconds. One-shot and persistent failures are
+consumed before lifecycle simulation so a failed transport attempt never
+advances the payment. The singleton is kept on the server process global to
+survive development hot reload and is intentionally not multi-instance or
+deployment-safe.
 
 Scenario controls must be visibly marked development-only and must exercise the
 same HTTP endpoints as normal behavior. They must not set React query data

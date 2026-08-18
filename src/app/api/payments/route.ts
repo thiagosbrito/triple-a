@@ -11,6 +11,7 @@ import {
   createMockPayment,
   UnsupportedPaymentMethodError,
 } from "@/mocks/quote-factory";
+import { paymentScenarioStore } from "@/mocks/scenario-store";
 
 const INVALID_REQUEST_DETAIL =
   "The request body must contain a valid order_id, currency, and network.";
@@ -62,7 +63,10 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   try {
-    return Response.json(createMockPayment(parsedRequest.data), {
+    const payment = createMockPayment(parsedRequest.data);
+    paymentScenarioStore.registerPayment(payment);
+
+    return Response.json(payment, {
       status: 201,
     });
   } catch (error) {

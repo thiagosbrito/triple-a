@@ -1,7 +1,8 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createPaymentResponseSchema } from "@/features/checkout/api/contracts/payments";
 import { badRequestProblemSchema } from "@/features/checkout/api/contracts/problem";
+import { paymentScenarioStore } from "@/mocks/scenario-store";
 
 import { POST } from "./route";
 
@@ -13,8 +14,13 @@ function paymentRequest(body: string): Request {
   });
 }
 
+beforeEach(() => {
+  paymentScenarioStore.clear();
+});
+
 afterEach(() => {
   vi.useRealTimers();
+  paymentScenarioStore.clear();
 });
 
 describe("POST /api/payments", () => {
@@ -41,6 +47,13 @@ describe("POST /api/payments", () => {
       network: "tron",
       network_name: "Tron (TRC-20)",
       total_due: "163.69",
+    });
+    expect(paymentScenarioStore.has(payment.payment_reference)).toBe(true);
+    expect(
+      paymentScenarioStore.simulate(payment.payment_reference),
+    ).toMatchObject({
+      outcome: "response",
+      update: { status: "awaiting_payment" },
     });
   });
 

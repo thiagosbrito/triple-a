@@ -645,3 +645,36 @@ the focused M2-02 commit strategy is reviewed and approved.
 The candidate approved the proposed focused commit by directing work to
 continue. M2-02 can therefore close without mixing the scenario simulator or
 development-panel behavior into the quote-creation slice.
+
+## 2026-08-18 - M2-03 confirmation-fixture inconsistency
+
+M2-03 began after M2-02 was committed locally as `c4be2d9`. During simulator
+design, the source fixtures exposed an inconsistency: the USDT/Tron quote
+requires one confirmation, but the `confirming` example using the same payment
+reference reports two of three confirmations. Combining those values in one
+live scenario would make the issued quote and later status disagree.
+
+The simulator therefore derives confirmation counts from the stored quote. A
+one-confirmation method progresses directly from `detected` to `paid`, while a
+multi-confirmation method includes `confirming`. The literal PDF examples stay
+preserved in their independent contract tests. This limitation and treatment
+are recorded explicitly rather than presented as production API behavior.
+
+The implemented store defaults new payments to exact `awaiting_payment`, also
+supports a deterministic happy-path progression, and models response delay,
+one-shot failure, and persistent failure as orthogonal transport instructions.
+Failures do not consume a progression step. Status snapshots are generated
+from the registered quote and remain stable while pinned. Payment creation now
+registers the validated response in the server-only store; no shopper module
+imports mock state.
+
+The 42 focused tests, all 213 repository tests, formatting, ESLint, strict
+TypeScript, and the production build passed. The existing Node 24.16.0 versus
+declared 24.18.0 engine warning remains. M2-03 awaits the candidate's required
+pre-commit strategy review before M2-04 begins.
+
+The candidate then authorized autonomous completion of the full M2 milestone,
+with intervention required only for a genuine blocker. This approves the
+reported focused M2-03 commit strategy and the lead may continue through the
+remaining M2 tasks while still announcing commit boundaries and avoiding any
+remote push.
