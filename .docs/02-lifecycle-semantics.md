@@ -1,7 +1,7 @@
 # Payment Lifecycle Semantics
 
-Status: Draft for review
-Scope: Pre-implementation analysis only
+Status: Implemented for M4; `underpaid` semantics remain provisional
+Scope: Payment lifecycle authority, transitions, polling, and shopper actions
 
 ## Authoritative state
 

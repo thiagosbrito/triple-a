@@ -982,3 +982,133 @@ the network-safe instruction feature commit. Reduced-motion behavior,
 responsive/keyboard/contrast browser verification, visual-state refinement,
 and final M3 documentation form the accessibility/visual commit. No history was
 squashed or amended and no push was performed.
+
+## 2026-08-18 - M4-01 absolute countdown
+
+The countdown is derived on every repaint from validated `expires_at` and the
+current clock. It does not store or decrement seconds remaining. A
+self-scheduling timeout aligns repainting with the next displayed second and
+stops at zero. Focus, visible-document restoration, a complete new quote, and
+unmount all have deterministic fake-time coverage. The timer is explicitly not
+a live region, preventing a screen reader announcement every second.
+
+At zero the countdown uses neutral copy—"Do not send while we confirm"—rather
+than declaring authoritative expiry. M4-01 passed all 298 repository tests, the
+production build, and all six Chromium journeys.
+
+## 2026-08-18 - M4-02 zero-time reconciliation
+
+The countdown controller now owns the single time observation used by the
+issued flow. At zero, transfer instructions and guarded method changing are
+removed in the same render, before the asynchronous reconciliation starts.
+Exactly one status GET is issued for the active payment reference. Status
+responses are additionally rejected when their body reference differs from the
+requested reference.
+
+An unchanged authoritative `awaiting_payment` permits local expiry. A detected
+or later authoritative status wins and cannot be overwritten by the local
+deadline. The detection race test holds the GET open at zero, verifies the old
+amount/address/QR are absent, then resolves `detected` and verifies explicit
+zero-confirmation/do-not-resend guidance. A transport failure keeps the payment
+reference and explicitly tells the shopper not to assume expiry.
+
+M4-02 passed all 302 repository tests, the production build, and all six
+Chromium journeys.
+
+## 2026-08-18 - M4-03 safe requote and conflict recovery
+
+Expired instructions remain absent while a requote is pending or fails. A
+successful response is checked against the requested reference, asset, network,
+checkout session, monetary precision, and amount-plus-fee invariant before the
+complete reference-addressed quote snapshot is replaced. The same-reference
+replacement changes the `expires_at` identity, remounts the deadline flow, and
+starts from the new absolute deadline without exposing a mixed old/new quote.
+
+HTTP 409 remains a validated recoverable API problem rather than a payment
+failure. The client presents its factual detail and immediately refreshes the
+authoritative payment status once. A refreshed `detected` result overrides
+local expiry and removes the requote action; a still-awaiting result keeps the
+old instructions inactive and permits retrying the requote.
+
+The full browser gate exposed a pre-existing local-only race: multiple workers
+mutated the mock's one process-local payment record and fixed reference. The
+browser configuration now uses one worker, matching the existing CI behavior
+and making lifecycle evidence deterministic. M4-03 passed all 306 repository
+tests, the production build, and all six Chromium journeys.
+
+## 2026-08-18 - M4-04 reference-scoped dynamic polling
+
+The zero-time status query is now also the sole polling owner. TanStack Query
+starts one immediate request, schedules the next request only after the current
+one settles, and deduplicates a deadline reconciliation against any request
+already in flight. Named intervals are 3 seconds for `awaiting_payment`, 1.5
+seconds for `detected`, 2 seconds for `confirming`, and 3 seconds for the
+provisionally non-terminal `underpaid`. `paid`, `overpaid`, `expired`, and
+`failed` stop polling; locally confirmed expiry also stops until requote.
+
+Detection or any later authoritative state disables and cleans up the quote
+countdown immediately. Reference changes and unmount abort obsolete requests.
+Focused fake-time tests hold a request unresolved through 30 seconds to prove
+the maximum in-flight request count remains one, then independently prove
+dynamic intervals, terminal stopping, reference cancellation, unmount cleanup,
+and immediate method/instruction locking after detection.
+
+M4-04 passed all 320 repository tests, the production build, and all six
+Chromium journeys. Transport-specific backoff and shopper connectivity copy
+remain assigned to M5.
+
+## 2026-08-18 - M4-05 detected and confirming presentation
+
+The interim generic status summary was replaced for `detected` and
+`confirming`. Both presentations keep the exact validated amount received,
+asset, network name, transaction hash, and payment reference visible. Detection
+states explicitly say zero confirmations; confirmation states show current and
+required counts in text and a semantic progress element. Both say not to send
+another payment.
+
+These states render no quote countdown, destination/QR/copy action, or payment
+method change. No transaction-explorer link is invented because the assessment
+does not provide a trusted network-to-explorer contract. M4-05 passed all 322
+repository tests, the production build, and all six Chromium journeys.
+
+## 2026-08-18 - M4-06 complete shopper outcome handling
+
+Status responses now pass a second semantic boundary after structural Zod
+validation. Monetary fields must fit the issued asset's catalog precision,
+confirmation targets must match the issued quote, and an underpayment address
+must remain the issued address. Protocol violations remain protocol errors and
+cannot become shopper instructions. The same validation also protects the
+immediate status refresh after a requote conflict.
+
+`paid`, `underpaid`, `overpaid`, `expired`, and `failed` now have dedicated
+presentations. Underpayment is the only outcome that offers transfer controls:
+it shows the exact received and outstanding amounts, tells the shopper to send
+only the outstanding amount on the same network, and renders the same validated
+address as visible text, clipboard content, and QR payload while polling
+continues. Overpayment states exact received/excess values and explicitly avoids
+promising refund handling or timing. Failure tells the shopper not to repeat the
+full payment. Expiry keeps all old instructions absent and exposes requote only.
+
+M4-06 passed all 338 repository tests, the production build, and all six
+Chromium journeys.
+
+## 2026-08-18 - M4-07 lifecycle verification gate
+
+The issued flow now has an integration matrix that renders all seven
+post-awaiting statuses through the real status-query boundary and separately
+proves continued polling for all four active classifications and stopping for
+all four terminal classifications. Together with the awaiting instructions,
+dynamic query sequence, countdown, detection race, requote race, semantic
+validator, and outcome suites, all eight statuses and M4 safety invariants are
+covered.
+
+A proposed combined fake-time test that attempted to assert every rendered
+underpaid-to-paid transition in one case was removed. It duplicated the
+independently verified UI matrix and dynamic query sequence while depending on
+React Query observer scheduling rather than shopper behavior. The smaller tests
+preserve the same risk coverage with deterministic failure signals.
+
+The final uncommitted M4 gate passed 37 test files and 353 tests, formatting,
+ESLint, strict TypeScript, the production build, all six serialized Chromium
+journeys, and diff hygiene. M4-08 remains uncommitted pending candidate review
+of the real-history commit breakdown.

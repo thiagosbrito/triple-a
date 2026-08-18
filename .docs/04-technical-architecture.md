@@ -373,6 +373,13 @@ Each variant should require exactly the fields needed to present that state.
 Unknown or structurally invalid payloads become protocol errors, not payment
 failures.
 
+M4 adds quote-aware semantic validation before a status update can enter the
+query cache or UI. Every status money field must fit the issued asset's
+catalog-provided precision. Detected, confirming, and paid confirmation targets
+must match the issued quote. An underpayment's destination must remain the
+issued quote address before it can be shown, copied, or encoded into a QR.
+These checks also protect the immediate status refresh after a requote conflict.
+
 ### Issued-quote monetary integrity
 
 The currency catalog remains the runtime source of asset precision. When a
@@ -458,6 +465,22 @@ A low-frequency UI timer causes re-rendering only. On visibility change and
 focus, recompute immediately. Browser timer throttling therefore affects only
 how often the screen repaints, not the calculated deadline.
 
+M4 implements this with one self-scheduling timeout aligned to the next visible
+second. Each repaint stores only a fresh `Date.now()` observation and derives
+remaining time from the absolute validated deadline. Focus and return to a
+visible document force the same calculation immediately. A changed
+`expires_at` replaces the pending timeout; zero and unmount remove it. The timer
+has `aria-live="off"`, so assistive technology is not asked to announce every
+tick.
+
+At the first zero observation, the issued flow immediately removes amount,
+address, QR, copy, and method-change actions before an effect runs. One disabled
+TanStack status query is explicitly refetched under a reference-specific status
+key. `awaiting_payment` permits local expiry; any returned authoritative status
+wins; a transport or protocol error produces an indeterminate connectivity
+state and never claims expiry. The attempt guard is scoped to the payment
+reference plus complete quote lifetime through the keyed issued-flow boundary.
+
 Device-clock skew cannot be fully solved from the supplied body contract. The
 technical design will evaluate whether to derive a server offset from the HTTP
 `Date` header. If that path is unreliable across the chosen runtime, the
@@ -484,6 +507,19 @@ Dynamic polling policy:
 These are named implementation constants with deterministic tests. They are a
 responsive assessment policy and do not pretend the mock's timing represents
 real chain timing.
+
+M4 implements the active portion as the same reference-scoped TanStack query
+used by deadline reconciliation. The first status request starts when issued
+instructions mount. The next interval is selected from the last validated
+status only after the current request settles, and deadline reconciliation
+joins an already in-flight request instead of starting another. A locally
+confirmed expiry disables its otherwise-awaiting interval until requote.
+Reference changes and unmount consume the query signal and abort obsolete
+transport work. When a validated status proves funds arrived, expiration is
+disabled and its timer/focus/visibility listeners are removed. Fake-time tests
+prove dynamic intervals, a maximum of one unresolved request, terminal stop,
+and cancellation cleanup. M5 adds the specified failure-count backoff and
+shopper-facing degraded-connectivity treatment.
 
 ## Mock scenario design
 

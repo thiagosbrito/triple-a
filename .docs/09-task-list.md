@@ -42,12 +42,12 @@ Only the lead agent updates task status. At most one critical-path task may be
 
 ## Current milestone
 
-**Milestone M3 complete — countdown and lifecycle work is next.**
+**Milestone M4 implementation and verification complete — commit review is active.**
 
 ### Next task
 
-`M4-01` — Implement the absolute countdown and focus/visibility recomputation.
-Its dependency is complete and the task is ready for the next work session.
+`M4-08` — Review and commit the lifecycle slice
+handling. The task is active while the candidate reviews M3.
 
 Milestone M1 is committed and verified. Contracts, lifecycle presentation,
 exact money handling, deadline reconciliation, polling policy, and all supplied
@@ -802,14 +802,168 @@ Next: M4-01
 
 | ID | Task | Depends on | Status | Owner | Acceptance gate / evidence |
 | --- | --- | --- | --- | --- | --- |
-| M4-01 | Implement absolute countdown and focus/visibility recomputation. | M1-07, M3-09 | `READY` | Unassigned | Background time jump is immediately correct; no decremented authoritative counter. |
-| M4-02 | Implement zero-time status reconciliation. | M4-01, M3-01 | `BLOCKED` | Lead | Exactly one reconciliation; detected payment never becomes locally expired. |
-| M4-03 | Implement requote UI, atomic replacement, and 409 recovery. | M2-05, M4-02 | `BLOCKED` | Unassigned | Old instructions deactivate; complete new quote appears; conflict is recoverable. |
-| M4-04 | Implement non-overlapping dynamic status polling. | M1-07, M3-01 | `BLOCKED` | Lead | Maximum one request; cleanup on unmount/reference change; terminal stop policy. |
-| M4-05 | Implement detected and confirming presentations. | M4-04 | `BLOCKED` | Unassigned | Zero-confirmation meaning, do-not-resend copy, progress, and method lock are correct. |
-| M4-06 | Implement paid, underpaid, overpaid, expired, and failed presentations. | M4-04 | `BLOCKED` | Unassigned | Each state answers what happened and what action is safe; no unsupported promise. |
-| M4-07 | Add lifecycle component/integration tests. | M4-01..M4-06 | `BLOCKED` | Unassigned | Every status and critical transition is covered. |
-| M4-08 | Commit lifecycle slice. | M4-07 | `BLOCKED` | Lead | Full relevant checks pass; lifecycle docs match implementation. |
+| M4-01 | Implement absolute countdown and focus/visibility recomputation. | M1-07, M3-09 | `DONE` | Lead | Absolute clock derivation, second-boundary repainting, focus/visibility restoration, new-deadline replacement, cleanup, neutral zero copy, 298 tests, build, and six Chromium journeys pass. |
+| M4-02 | Implement zero-time status reconciliation. | M4-01, M3-01 | `DONE` | Lead | Instructions deactivate at zero; one reference-bound GET decides local expiry; detected funds win; transport/protocol failure stays non-business; 302 tests, build, and six Chromium journeys pass. |
+| M4-03 | Implement requote UI, atomic replacement, and 409 recovery. | M2-05, M4-02 | `DONE` | Lead | Old instructions stay inactive; complete new quote replaces the cached snapshot; 409 refreshes authoritative status and detected funds win; 306 tests, build, and six Chromium journeys pass. |
+| M4-04 | Implement non-overlapping dynamic status polling. | M1-07, M3-01 | `DONE` | Lead | Status-driven intervals; maximum one request; abort on unmount/reference change; local/authoritative terminal stop; detected freezes expiration; 320 tests, build, and six Chromium journeys pass. |
+| M4-05 | Implement detected and confirming presentations. | M4-04 | `DONE` | Lead | Exact received amount and network, zero/current confirmation progress, do-not-resend copy, transaction/reference identity, method lock, 322 tests, build, and six Chromium journeys pass. |
+| M4-06 | Implement paid, underpaid, overpaid, expired, and failed presentations. | M4-04 | `DONE` | Lead | Exact outcome data and safe next actions; underpaid-only transfer uses outstanding amount and consistent network/address/QR; no refund/retry promise; 338 tests, build, and six Chromium journeys pass. |
+| M4-07 | Add lifecycle component/integration tests. | M4-01..M4-06 | `DONE` | Lead | All eight statuses render through the polling boundary; all active/terminal poll classes, countdown races, requote races, cancellation, money/address consistency, and accessibility semantics are covered; final gate has 353 tests. |
+| M4-08 | Commit lifecycle slice. | M4-07 | `IN_PROGRESS` | Lead | Full relevant checks pass and lifecycle docs match implementation; commit strategy must be reviewed with the candidate before commits are created. |
+
+### M4-01 evidence
+
+```text
+Task: M4-01
+Status: DONE
+Owner: Lead
+Files: absolute countdown formatter and tests; clock-derived countdown hook and
+       fake-time tests; non-live countdown component; instruction integration;
+       execution documentation
+Checks: 37 focused tests; pnpm check; pnpm build; pnpm test:e2e;
+        git diff --check
+Results: 30 Vitest files and 298 tests, formatting, ESLint, strict TypeScript,
+         production build, and all 6 Chromium journeys pass
+Requirements: PR-06; PR-07; absolute `expires_at`; background/focus recovery;
+              no decremented authoritative counter; no tick announcements;
+              cleanup and new-deadline timer replacement
+Risks/assumptions: browser/device clock skew remains an explicitly documented
+                   body-contract limitation; zero-time authority is M4-02
+Next: M4-02
+```
+
+### M4-02 evidence
+
+```text
+Task: M4-02
+Status: DONE
+Owner: Lead
+Files: reference-specific status query key and API relationship validation;
+       deadline reconciliation hook; issued-flow safety states and race tests;
+       countdown ownership refactor; execution, architecture, and discussion docs
+Checks: 35 focused tests; pnpm check; pnpm build; pnpm test:e2e;
+        git diff --check
+Results: 31 Vitest files and 302 tests, formatting, ESLint, strict TypeScript,
+         production build, and all 6 Chromium journeys pass
+Requirements: PR-08 pre-requote state; detection/expiration race; exactly one
+              zero-time GET; reference identity; transport/business separation;
+              immediate instruction and method-change deactivation
+Risks/assumptions: detailed lifecycle panels and continued polling remain
+                   M4-04..M4-06; M4-02 uses safe interim authoritative summaries
+Next: M4-03
+```
+
+### M4-03 evidence
+
+```text
+Task: M4-03
+Status: DONE
+Owner: Lead
+Files: shared create/requote session and monetary validation; requote response
+       relationship checks; active reference-addressed quote observer; requote
+       mutation/cache transition; expired-state UI; success and conflict tests;
+       deterministic browser-worker configuration; execution documentation
+Checks: focused API/cache/component tests; pnpm check; pnpm build;
+        pnpm test:e2e; git diff --check
+Results: 31 Vitest files and 306 tests, formatting, ESLint, strict TypeScript,
+         production build, and all 6 Chromium journeys pass
+Requirements: PR-08; same payment reference; atomic complete quote replacement;
+              fresh absolute deadline; recoverable validated 409 detail; one
+              immediate status refresh; detected state wins over local expiry
+Risks/assumptions: the deterministic mock has one process-local store and one
+                   fixed reference, so browser workers are serialized; dynamic
+                   polling and full lifecycle presentation remain M4-04..M4-06
+Next: M4-04
+```
+
+### M4-04 evidence
+
+```text
+Task: M4-04
+Status: DONE
+Owner: Lead
+Files: exhaustive named polling policy and tests; active reference-scoped status
+       query; countdown enable/cleanup support; polling concurrency, cancellation,
+       interval, terminal-stop, and immediate-lock integration tests; docs
+Checks: 25 focused tests; pnpm check; pnpm build; pnpm test:e2e;
+        git diff --check
+Results: 33 Vitest files and 320 tests, formatting, ESLint, strict TypeScript,
+         production build, and all 6 Chromium journeys pass
+Requirements: PR-07; PR-09; one in-flight request maximum; dynamic active-state
+              intervals; provisional underpaid continuation; terminal stopping;
+              obsolete-reference/unmount cancellation; detection freezes expiry
+Risks/assumptions: transport backoff/manual recovery remains M5; M4-04 preserves
+                   last valid query data but does not yet render its connectivity
+                   treatment; detailed lifecycle content remains M4-05/M4-06
+Next: M4-05
+```
+
+### M4-05 evidence
+
+```text
+Task: M4-05
+Status: DONE
+Owner: Lead
+Files: detected/confirming status panel and variant-schema tests; issued-flow
+       lifecycle integration; task/discussion documentation
+Checks: 9 focused component/integration tests; pnpm check; pnpm build;
+        pnpm test:e2e; git diff --check
+Results: 34 Vitest files and 322 tests, formatting, ESLint, strict TypeScript,
+         production build, and all 6 Chromium journeys pass
+Requirements: detected means zero confirmations; received amount, asset, and
+              network remain exact; current/required progress is visible;
+              do-not-resend guidance; transaction/reference identity; no
+              countdown, QR, copy, or method-change action after detection
+Risks/assumptions: explorer linking is intentionally absent because no trusted
+                   network-specific explorer contract is supplied; remaining
+                   status-specific actions and support copy are M4-06
+Next: M4-06
+```
+
+### M4-06 evidence
+
+```text
+Task: M4-06
+Status: DONE
+Owner: Lead
+Files: quote-aware status semantic validator/tests; paid, underpaid, overpaid,
+       expired, and failed outcome panel/tests; issued-flow integration; docs
+Checks: 23 focused validator/outcome/flow tests; pnpm check; pnpm build;
+        pnpm test:e2e; git diff --check
+Results: 36 Vitest files and 338 tests, formatting, ESLint, strict TypeScript,
+         production build, and all 6 Chromium journeys pass
+Requirements: exact status money scale; confirmation target integrity;
+              underpaid same address/network and outstanding-only transfer;
+              paid completion; terminal expiry/requote; factual overpayment;
+              no automatic refund promise; no blind failed-payment retry
+Risks/assumptions: underpaid remains provisionally non-terminal; support contact
+                   details and refund handling are absent from the supplied
+                   contract, so the UI retains the reference without inventing
+                   a URL, policy, timing, or outcome
+Next: M4-07
+```
+
+### M4-07 evidence
+
+```text
+Task: M4-07
+Status: DONE
+Owner: Lead
+Files: issued-flow lifecycle integration matrix plus all M4 focused suites;
+       lifecycle, architecture, discussion, and execution documentation
+Checks: pnpm check; pnpm build; pnpm test:e2e; git diff --check
+Results: 37 Vitest files and 353 tests, formatting, ESLint, strict TypeScript,
+         production build, all 6 Chromium journeys, and diff hygiene pass
+Requirements: all eight statuses through HTTP-query/UI boundary; every active
+              and terminal polling class; absolute deadline and background
+              recovery; detection/expiration and requote conflict races; no
+              overlapping request; cancellation; exact money/address/QR;
+              safe actions and accessible status structure
+Risks/assumptions: failure-count backoff, persistent connectivity treatment,
+                   manual retry, and evaluator scenario panel remain M5;
+                   browser/device clock skew remains a body-contract limitation
+Next: M4-08 commit strategy review
+```
 
 ## Milestone M5 — Adverse transport and evaluator controls
 
