@@ -223,8 +223,10 @@ describe("PaymentScenarioStore", () => {
 
     const storedPayment = store.getPayment(payment.payment_reference);
     const configuration = store.getConfiguration(payment.payment_reference);
+    const status = store.peekStatus(payment.payment_reference);
     storedPayment.order.amount = "999.00" as typeof storedPayment.order.amount;
     configuration.response_delay_ms = 20_000;
+    status.status = "paid";
 
     expect(store.getPayment(payment.payment_reference).order.amount).toBe(
       "149.90",
@@ -232,6 +234,9 @@ describe("PaymentScenarioStore", () => {
     expect(
       store.getConfiguration(payment.payment_reference).response_delay_ms,
     ).toBe(0);
+    expect(store.peekStatus(payment.payment_reference).status).toBe(
+      "awaiting_payment",
+    );
   });
 
   it("throws a typed error for an unknown reference", () => {

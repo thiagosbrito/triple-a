@@ -114,6 +114,12 @@ Required client consequences:
 - Present the 409 detail as a recoverable quote conflict, then refresh the
   current authoritative payment rather than reporting a generic failure.
 
+Mock/API safety policy: requote is accepted only when the authoritative state
+is `expired`, or while it remains `awaiting_payment` after the absolute quote
+deadline. A state proving funds arrived, a settled state, or `failed` cannot be
+requoted merely because wall-clock time passed. The shopper UI should never
+offer that action in those states, and the mock rejects direct unsafe calls.
+
 ## Payment-method commitment
 
 The assessment requires a new quote when the shopper changes currency or

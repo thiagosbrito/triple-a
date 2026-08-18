@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-import type { PaymentStatusUpdate } from "@/features/checkout/api/contracts/payment-status";
+import {
+  paymentStatusUpdateSchema,
+  type PaymentStatusUpdate,
+} from "@/features/checkout/api/contracts/payment-status";
 import {
   paymentStatusSchema,
   PAYMENT_STATUS,
@@ -162,6 +165,12 @@ export class PaymentScenarioStore {
 
   getConfiguration(paymentReference: string): PaymentScenarioConfiguration {
     return copyConfiguration(this.#getStored(paymentReference).configuration);
+  }
+
+  peekStatus(paymentReference: string): PaymentStatusUpdate {
+    return paymentStatusUpdateSchema.parse(
+      this.#getStored(paymentReference).currentUpdate,
+    );
   }
 
   configure(

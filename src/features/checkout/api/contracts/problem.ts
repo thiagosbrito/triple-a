@@ -20,6 +20,7 @@ export const QUOTE_NOT_EXPIRED_PROBLEM_TYPE = PROBLEM_TYPES[1];
 export const BAD_REQUEST_PROBLEM_TITLE = "Bad Request";
 export const NOT_FOUND_PROBLEM_TITLE = "Not Found";
 export const INTERNAL_SERVER_ERROR_PROBLEM_TITLE = "Internal Server Error";
+export const CONFLICT_PROBLEM_TITLE = "Conflict";
 
 export const badRequestProblemSchema = z.strictObject({
   type: z.literal(BAD_REQUEST_PROBLEM_TYPE),
@@ -50,6 +51,15 @@ export type InternalServerErrorProblem = z.infer<
   typeof internalServerErrorProblemSchema
 >;
 
+export const conflictProblemSchema = z.strictObject({
+  type: z.literal(BAD_REQUEST_PROBLEM_TYPE),
+  title: z.literal(CONFLICT_PROBLEM_TITLE),
+  status: z.literal(409),
+  detail: nonBlankProtocolStringSchema,
+});
+
+export type ConflictProblem = z.infer<typeof conflictProblemSchema>;
+
 export const QUOTE_NOT_EXPIRED_PROBLEM_TITLE = "Quote has not expired";
 
 export const quoteNotExpiredProblemSchema = z.strictObject({
@@ -67,6 +77,7 @@ export type KnownApiProblem =
   | BadRequestProblem
   | NotFoundProblem
   | InternalServerErrorProblem
+  | ConflictProblem
   | QuoteNotExpiredProblem;
 
 export const API_OPERATIONS = [

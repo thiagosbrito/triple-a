@@ -699,3 +699,21 @@ The full repository gate passed with 20 test files and 235 tests, and the
 production build contains the dynamic status and development-control routes.
 The development endpoint returns 404 when `NODE_ENV` is production. The host
 Node engine warning remains unchanged.
+
+## 2026-08-18 - M2-05 guarded requote route
+
+The requote route accepts a replacement only when the authoritative mock state
+is `expired`, or when it remains `awaiting_payment` at or after the absolute
+deadline. States proving funds arrived, settled states, and `failed` reject a
+direct requote even after wall-clock expiry, preventing a replacement quote
+from encouraging an unsafe second payment. Early awaiting requests preserve the
+documented quote-not-expired problem; other lifecycle conflicts use a truthful
+generic 409.
+
+A successful requote keeps the payment reference and order context, replaces
+the complete quote atomically, resets status and scenario controls to
+`awaiting_payment`, and starts a fresh three-minute deadline. Focused tests,
+all 243 repository tests, the production build, and live Next.js verification
+passed. Live HTTP returned the documented 409 before expiry, then returned a
+complete 201 USDC/Polygon replacement after authoritative expiry was triggered
+through the development endpoint. The temporary server was stopped.

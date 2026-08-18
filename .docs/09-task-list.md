@@ -46,16 +46,16 @@ Only the lead agent updates task status. At most one critical-path task may be
 
 ### Next task
 
-`M2-05` — Implement the requote route and typed early-requote conflict after
-the focused M2-04 commit.
+`M2-06` — Add development request instrumentation for polling-concurrency
+evidence after the focused M2-05 commit.
 
 Milestone M1 is committed and verified. Contracts, lifecycle presentation,
 exact money handling, deadline reconciliation, polling policy, and all supplied
 PDF fixtures are covered. M2-01 is committed locally as `5d47f7d`, and M2-02 is
 committed locally as `c4be2d9`, and M2-03 is committed locally as `00ab520`.
-M2-04 has passed verification and is ready for its autonomous focused commit.
-The candidate authorized completion of the remaining M2 milestone.
-Shopper-facing feature work has not started.
+M2-04 is committed locally as `511b969`; M2-05 is active. The candidate
+authorized completion of the remaining M2 milestone. M2-05 has passed full and
+live verification. Shopper-facing feature work has not started.
 
 ## Milestone M0 — Design gates and repository foundation
 
@@ -398,8 +398,8 @@ After schemas/interfaces are frozen by the lead:
 | M2-02 | Implement quote factory and `POST /api/payments`. | M2-01 | `DONE` | Lead | All six catalog methods produce validated, internally consistent quotes with exact decimal totals and three-minute expiry; malformed or unavailable selections return typed 400 problems; focused/full tests, build, and live HTTP checks pass. |
 | M2-03 | Implement payment scenario store/simulator. | M1-09 | `DONE` | Lead | Exact-state and quote-consistent deterministic progression modes, stable status snapshots, validated delay/failure controls, and server-only store integration pass focused and full verification. |
 | M2-04 | Implement `GET /api/payments/:reference`. | M2-03 | `DONE` | Lead | All eight states, delay, one-shot/persistent HTTP failure, and a real empty-reply disconnect are triggerable through validated HTTP routes; full tests, build, and live Next.js checks pass. |
-| M2-05 | Implement requote route and 409 behavior. | M2-02, M2-03 | `READY` | Unassigned | Same reference; complete replacement quote; typed early-requote conflict. |
-| M2-06 | Add development request instrumentation for concurrency evidence. | M2-04 | `BLOCKED` | Unassigned | Tests can observe maximum in-flight polls without production UI coupling. |
+| M2-05 | Implement requote route and 409 behavior. | M2-02, M2-03 | `DONE` | Lead | Same-reference complete replacement quote, exact three-minute deadline, typed early 409, and lifecycle-safe conflict behavior pass focused/full tests, build, and live HTTP verification. |
+| M2-06 | Add development request instrumentation for concurrency evidence. | M2-04 | `READY` | Unassigned | Tests can observe maximum in-flight polls without production UI coupling. |
 | M2-07 | Add route/contract integration tests and commit. | M2-01..M2-06 | `BLOCKED` | Lead | Every assessment condition is reachable through HTTP. |
 
 ### M2-01 evidence
@@ -497,6 +497,29 @@ Risks/assumptions: the disconnect intentionally emits a Next.js server pipe
                    control route returns 404 in production; host Node remains
                    24.16.0 versus the declared 24.18.0
 Next: M2-05
+```
+
+### M2-05 evidence
+
+```text
+Task: M2-05
+Status: DONE
+Owner: Lead
+Files: dynamic requote route and focused test;
+       store status snapshot accessor and defensive-copy test;
+       generic conflict problem contract and test;
+       lifecycle, execution, and discussion documentation
+Checks: 49 focused Vitest tests and typecheck; live early 409, dev-triggered
+        expiry, and successful 201 requote; pnpm check; pnpm build;
+        git diff --check
+Results: all 243 repository tests passed; live response preserved the reference,
+         replaced USDT/Tron with a complete USDC/Polygon quote, and set a new
+         three-minute expiry; production build passed
+Requirements: PR-08; PR-11; FR-04; M2-05 acceptance gate
+Risks/assumptions: unsafe post-detection/settlement requotes use a generic 409
+                   because the supplied early-expiry problem would be untrue;
+                   host Node remains 24.16.0 versus the declared 24.18.0
+Next: M2-06
 ```
 
 ### M2 safe parallelism
