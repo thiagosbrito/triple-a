@@ -19,6 +19,7 @@ import {
   formatCalculatedAmount,
 } from "@/features/checkout/domain/money";
 import { isPaymentMethodSupported } from "@/features/checkout/domain/payment-method";
+import { CHECKOUT_SESSION } from "@/features/checkout/config/checkout-session";
 import { CURRENCIES_FIXTURE } from "@/mocks/fixtures/currencies";
 
 export const MOCK_QUOTE_LIFETIME_MILLISECONDS = 3 * 60 * 1_000;
@@ -130,8 +131,8 @@ export function createMockPayment(
     payment_reference: MOCK_PAYMENT_REFERENCE,
     order_id: request.order_id,
     status: PAYMENT_STATUS.awaiting_payment,
-    merchant: { name: "Nordwind Audio", logo_url: null },
-    order: { currency: "EUR", amount: "149.90" },
+    merchant: CHECKOUT_SESSION.merchant,
+    order: CHECKOUT_SESSION.order,
     quote: {
       crypto_currency: request.currency,
       network: request.network,

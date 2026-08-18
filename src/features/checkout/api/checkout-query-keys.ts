@@ -7,3 +7,8 @@ export const checkoutQueryKeys = {
   payment: (reference: PaymentReference) =>
     [...checkoutQueryKeys.payments(), reference] as const,
 };
+
+export const checkoutMutationKeys = {
+  all: [...checkoutQueryKeys.all, "mutations"] as const,
+  createPayment: () => [...checkoutMutationKeys.all, "create-payment"] as const,
+};

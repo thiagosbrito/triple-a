@@ -245,6 +245,7 @@ Security evidence reviewed on 2026-08-17:
 
 | Data | Owner | Lifetime |
 | --- | --- | --- |
+| Merchant/order checkout context | Validated hosted-page session input | Hosted checkout session |
 | Supported currencies and networks | TanStack Query cache | Application session with long stale time |
 | Draft currency/network selection | Checkout composition/local state | Until quote creation succeeds |
 | Issued currency/network | The validated quote in TanStack Query | Fixed for the lifetime of that quote |
@@ -379,9 +380,7 @@ compile-time implementation task.
 ## Quote identity and race prevention
 
 Currency/network changes can create overlapping mutation responses even if
-status polling itself never overlaps. The design needs an explicit policy.
-
-Proposed policy:
+status polling itself never overlaps. Implemented policy:
 
 1. Each quote request captures its currency/network pair.
 2. A new selection cancels the previous request where cancellation is
@@ -392,6 +391,14 @@ Proposed policy:
    updated independently.
 5. Polling for a previous payment reference is cancelled before the new
    reference becomes active.
+
+M3 implements points 1-4 with one mutation intent id per selection, an
+`AbortController` for the superseded request, request/response pair validation,
+and an intent-id guard before the complete payment enters its
+reference-specific query cache. Tests deliberately make the old transport
+ignore cancellation and resolve after the new quote; the obsolete response is
+not cached and does not replace the visible quote. Point 5 becomes active when
+status polling is introduced in M4.
 
 ### Method-change safety
 

@@ -84,6 +84,7 @@ would add a second state model and weaken the design.
 
 | Limitation | Consequence | Proposed treatment |
 | --- | --- | --- |
+| No pre-quote endpoint supplies the merchant name, order reference, or fiat amount required by the initial summary. | The selector page needs trusted checkout context before `POST /api/payments` can return the same fields. | Treat the assessment's fixed merchant/order as validated hosted-page session input and reuse that input in the mock payment response so the summary cannot drift. |
 | No server timestamp is included in a response body. | `expires_at - Date.now()` survives tab throttling but cannot fully correct a badly skewed device clock. | Document the limitation; optionally use the HTTP `Date` header if the mock and runtime expose it reliably. |
 | No late-payment state is specified. | We cannot truthfully define recovery for funds detected after expiry. | Do not invent production semantics. |
 | No refund/support policy is specified for overpayment. | The UI cannot promise refund timing or method. | Use factual copy only. |

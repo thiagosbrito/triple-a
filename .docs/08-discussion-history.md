@@ -787,3 +787,61 @@ ESLint, strict TypeScript, the production build, and a dependency audit with
 zero advisories across 558 dependencies. The existing host Node 24.16.0 versus
 the repository's 24.18.0 minimum warning remains. No commit was created before
 presenting the candidate with the focused M3 commit strategy.
+
+## 2026-08-18 - M3-02 hosted context and method selection
+
+The brief requires merchant name, order reference, and locale-formatted EUR
+149.90 before a shopper chooses a payment method, but provides no pre-quote
+endpoint; those fields first appear in the payment-creation response. The page
+therefore models the fixed assessment order as validated hosted-checkout
+session input. The mock payment response reuses the same merchant/order values,
+preventing the pre-quote summary from drifting from the payment context.
+
+EUR localization does not pass the decimal string through `Number` or another
+binary float. Locale-specific grouping, separators, and currency placement are
+derived by formatting the exact integer portion as `BigInt`, then the validated
+two-digit fraction is inserted as text. Tests cover US and German formatting,
+a value beyond JavaScript's safe-integer range, and rejection beyond EUR's
+minor-unit scale.
+
+Payment methods are rendered directly from the validated catalog as one radio
+choice per asset/network pair. This prevents construction of an unsupported
+pair and keeps the network in each control's explicit accessible name. The
+page covers loading, truthful pre-payment failure, manual retry, keyboard
+selection, and all six current catalog methods. A future backend-added method
+will render through the same mapping without a frontend enum update.
+
+The in-app Browser connection was unavailable for direct screenshot review, so
+that was not claimed as evidence. The real Chromium journey did load the page,
+verify all six methods, click the visible USDC/Polygon card, and observe its
+semantic radio and status update. M3-02 passed 273 repository tests, the
+production build, and all four Playwright journeys. Responsive and Figma-based
+visual review remain intentionally assigned to M3-07/M3-08.
+
+The candidate then supplied a zoomed-out screenshot that exposed a real desktop
+grid error: a large order-summary card occupied the flexible column while the
+six interactive methods were constrained to a 22rem rail. The cause was an
+incorrect large-screen order utility. Removing it makes the method selector the
+wide primary column and the order summary the compact sticky sidebar, without
+changing the mobile DOM order. This is a candidate-provided visual review
+improving the agent-authored layout before Figma refinement.
+
+## 2026-08-18 - M3-03 quote identity and stale-response defense
+
+Quote creation uses a TanStack mutation without automatic retry, since retrying
+a payment-creation POST could create duplicate backend work. Every selection
+gets a monotonically increasing local intent id and its own abort signal. A new
+selection aborts the prior request, but cancellation is treated as best effort,
+not as the safety boundary.
+
+The API client now rejects a structurally valid response when its order,
+currency, or network differs from the request. The checkout hook also verifies
+that returned merchant and fiat-order context match the validated hosted
+session. Only the latest intent may atomically enter the query cache under its
+validated payment reference.
+
+The race test deliberately makes the first transport ignore its aborted signal,
+lets a later USDC/Polygon request succeed, then resolves the obsolete USDT/Tron
+response. The old mutation completes but creates no query-cache entry and does
+not replace the visible Polygon quote. M3-03 passed all 276 repository tests,
+the production build, and all four Chromium journeys.

@@ -149,6 +149,40 @@ async function requestJson<TResponse>({
   return parsedResponse.data;
 }
 
+function assertCreatedPaymentMatchesRequest(
+  response: CreatePaymentResponse,
+  request: CreatePaymentRequest,
+): CreatePaymentResponse {
+  const issues = [];
+
+  if (response.order_id !== request.order_id) {
+    issues.push({
+      message: "Payment order does not match the requested order",
+      path: ["order_id"],
+    });
+  }
+
+  if (response.quote.crypto_currency !== request.currency) {
+    issues.push({
+      message: "Quote currency does not match the requested currency",
+      path: ["quote", "crypto_currency"],
+    });
+  }
+
+  if (response.quote.network !== request.network) {
+    issues.push({
+      message: "Quote network does not match the requested network",
+      path: ["quote", "network"],
+    });
+  }
+
+  if (issues.length > 0) {
+    throw new ProtocolError("create_payment", issues);
+  }
+
+  return response;
+}
+
 function jsonRequestInit(
   method: "POST",
   body: unknown,
@@ -190,10 +224,10 @@ export function createCheckoutApi(
       });
     },
 
-    createPayment(request, requestOptions) {
+    async createPayment(request, requestOptions) {
       const body = createPaymentRequestSchema.parse(request);
 
-      return requestJson({
+      const response = await requestJson({
         fetch: fetcher,
         operation: "create_payment",
         path: "/api/payments",
@@ -201,6 +235,8 @@ export function createCheckoutApi(
         responseSchema: createPaymentResponseSchema,
         init: jsonRequestInit("POST", body, requestOptions),
       });
+
+      return assertCreatedPaymentMatchesRequest(response, body);
     },
 
     getPayment(reference, requestOptions) {

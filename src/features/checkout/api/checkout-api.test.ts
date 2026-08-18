@@ -185,6 +185,39 @@ describe("checkout API", () => {
     });
   });
 
+  it("rejects a valid quote that belongs to a different selection", async () => {
+    const fetcher = vi.fn<typeof fetch>();
+    fetcher.mockResolvedValue(
+      jsonResponse(
+        {
+          ...payment,
+          quote: {
+            ...payment.quote,
+            crypto_currency: "USDC",
+            network: "polygon",
+            network_name: "Polygon",
+          },
+        },
+        201,
+      ),
+    );
+    const api = createCheckoutApi({ fetch: fetcher });
+    const request = createPaymentRequestSchema.parse({
+      order_id: "ORD-88213",
+      currency: "USDT",
+      network: "tron",
+    });
+
+    await expect(api.createPayment(request)).rejects.toMatchObject({
+      kind: "protocol_error",
+      operation: "create_payment",
+      issues: expect.arrayContaining([
+        expect.objectContaining({ path: ["quote", "crypto_currency"] }),
+        expect.objectContaining({ path: ["quote", "network"] }),
+      ]),
+    });
+  });
+
   it("rejects a mismatch between HTTP status and problem status", async () => {
     const fetcher = vi.fn<typeof fetch>();
     fetcher.mockResolvedValue(

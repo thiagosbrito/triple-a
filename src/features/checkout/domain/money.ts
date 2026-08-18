@@ -111,6 +111,40 @@ export function formatTransferAmount(
 }
 
 /**
+ * Formats the assessment's EUR order total without converting the decimal
+ * string to a binary floating-point number. Intl supplies locale-specific
+ * grouping, separators, and currency placement from an exact BigInt integer;
+ * the validated two-digit fraction is then preserved as text.
+ */
+export function formatEuroOrderAmount(
+  value: DecimalString,
+  locale?: Intl.LocalesArgument,
+): string {
+  const euroFractionDigits = 2;
+  assertAmountScale(value, euroFractionDigits);
+
+  const decimalSeparatorIndex = value.indexOf(".");
+  const integerPart =
+    decimalSeparatorIndex === -1
+      ? value
+      : value.slice(0, decimalSeparatorIndex);
+  const fractionPart =
+    decimalSeparatorIndex === -1 ? "" : value.slice(decimalSeparatorIndex + 1);
+  const exactFraction = fractionPart.padEnd(euroFractionDigits, "0");
+  const formatter = new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: euroFractionDigits,
+    maximumFractionDigits: euroFractionDigits,
+  });
+
+  return formatter
+    .formatToParts(BigInt(integerPart))
+    .map((part) => (part.type === "fraction" ? exactFraction : part.value))
+    .join("");
+}
+
+/**
  * Formats a calculated value without exponent notation or rounding. Insignificant
  * trailing zeroes are removed unless a minimum display scale is requested.
  */

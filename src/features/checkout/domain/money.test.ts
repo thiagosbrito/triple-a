@@ -9,6 +9,7 @@ import {
   assertAmountScale,
   compareDecimalAmounts,
   formatCalculatedAmount,
+  formatEuroOrderAmount,
   formatTransferAmount,
   MoneyError,
   subtractDecimalAmounts,
@@ -95,6 +96,30 @@ describe("money domain", () => {
   it("rejects a minimum display scale above the asset scale", () => {
     expect(() => formatCalculatedAmount(amount("1"), 6, 7)).toThrowError(
       expect.objectContaining<Partial<MoneyError>>({ code: "invalid_scale" }),
+    );
+  });
+
+  it.each([
+    ["en-US", "€149.90"],
+    ["de-DE", "149,90 €"],
+  ])(
+    "formats the EUR order total for %s without numeric coercion",
+    (locale, expected) => {
+      expect(formatEuroOrderAmount(amount("149.90"), locale)).toBe(expected);
+    },
+  );
+
+  it("formats a large EUR order total without precision loss", () => {
+    expect(
+      formatEuroOrderAmount(amount("1000000000000000000000.01"), "en-US"),
+    ).toBe("€1,000,000,000,000,000,000,000.01");
+  });
+
+  it("rejects an EUR order amount beyond its two-decimal minor unit", () => {
+    expect(() =>
+      formatEuroOrderAmount(amount("149.901"), "en-US"),
+    ).toThrowError(
+      expect.objectContaining<Partial<MoneyError>>({ code: "scale_exceeded" }),
     );
   });
 

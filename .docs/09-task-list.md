@@ -46,10 +46,9 @@ Only the lead agent updates task status. At most one critical-path task may be
 
 ### Next task
 
-`M3-02` — Build the merchant/order summary and payment-method selection step.
-M3-01 passed its acceptance gate on 2026-08-18. Figma remains a visual
-reference for M3-08; its MCP read tools are not yet exposed in the current VS
-Code session.
+`M3-04` — Build the fixed issued-method and guarded-change flow. M3-03 passed
+its acceptance gate on 2026-08-18. Figma remains a visual reference for M3-08;
+its MCP read tools are not yet exposed in the current VS Code session.
 
 Milestone M1 is committed and verified. Contracts, lifecycle presentation,
 exact money handling, deadline reconciliation, polling policy, and all supplied
@@ -581,9 +580,9 @@ owners if they do not share files. Route integration remains lead-owned.
 | ID | Task | Depends on | Status | Owner | Acceptance gate / evidence |
 | --- | --- | --- | --- | --- | --- |
 | M3-01 | Add QueryClient provider, typed API client, and query keys. | M1-09, M2-07 | `DONE` | Lead | QueryClient ownership, cancelable typed transport, runtime success/problem validation, reference-aware keys, 267 repository tests, build, and audit pass. |
-| M3-02 | Build merchant/order summary and method-selection step. | M3-01 | `READY` | Unassigned | Locale-formatted fiat and every API-provided method are accessible. |
-| M3-03 | Implement quote mutation and stale-response protection. | M3-01, M3-02 | `BLOCKED` | Lead | Obsolete quote responses cannot replace current intent. |
-| M3-04 | Build fixed issued-method and guarded-change flow. | M3-03 | `BLOCKED` | Unassigned | Active instructions are not edited in place; warning and confirmation work. |
+| M3-02 | Build merchant/order summary and method-selection step. | M3-01 | `DONE` | Lead | Validated hosted-session summary, exact locale-safe EUR formatting, all six API methods, keyboard selection, recovery UI, 273 tests, build, and Chromium journey pass. |
+| M3-03 | Implement quote mutation and stale-response protection. | M3-01, M3-02 | `DONE` | Lead | Superseded requests abort; ignored cancellation and late obsolete success cannot update the visible quote or payment-reference cache; 276 tests and Chromium journey pass. |
+| M3-04 | Build fixed issued-method and guarded-change flow. | M3-03 | `READY` | Unassigned | Active instructions are not edited in place; warning and confirmation work. |
 | M3-05 | Build exact amount, fee breakdown, address/copy, and network safety UI. | M3-03 | `BLOCKED` | Unassigned | One quote supplies all fields; network is explicit; copy is exact and announced; inline guidance explains the irreversible transfer steps without relying on the dead problem-type URI. |
 | M3-06 | Add local QR generation and QR/address consistency tests. | M3-05 | `BLOCKED` | Unassigned | No remote data disclosure; QR payload matches visible validated instruction. |
 | M3-07 | Add responsive and accessibility verification for quote flow. | M3-02..M3-06 | `BLOCKED` | Unassigned | Keyboard/mobile/contrast/status criteria pass. |
@@ -619,6 +618,50 @@ Risks/assumptions: host Node 24.16.0 remains below the repository's pinned
                    24.18.0 minimum; Figma MCP read tools remain unavailable in
                    this VS Code session and are not required until M3-08
 Next: M3-02
+```
+
+### M3-02 evidence
+
+```text
+Task: M3-02
+Status: DONE
+Owner: Lead
+Files: checkout session config; exact EUR formatter and tests; currencies hook;
+       checkout/order/method components; app page/layout/styles and tests;
+       mock quote context reuse; Playwright shopper page journey; design docs
+Checks: 33 focused tests; pnpm check; pnpm build; pnpm test:e2e;
+        git diff --check
+Results: 26 Vitest files and 273 tests, formatting, ESLint, strict TypeScript,
+         production build, and all 4 Chromium journeys pass
+Requirements: PR-01; PR-02; PR-04 at selection; MR-01; MR-02; accessible
+              keyboard selection; truthful catalog-load recovery
+Risks/assumptions: the brief has no pre-quote checkout-context endpoint, so
+                   merchant/order data is validated hosted-page input shared
+                   with the mock response; direct Browser-plugin visual review
+                   was unavailable, while the real Playwright UI journey passed;
+                   full responsive/visual verification remains M3-07/M3-08
+Next: M3-03
+```
+
+### M3-03 evidence
+
+```text
+Task: M3-03
+Status: DONE
+Owner: Lead
+Files: checkout API request/response relationship validation and tests;
+       mutation keys; use-create-payment hook; checkout integration and tests;
+       Playwright quote journey; architecture and execution documentation
+Checks: 19 focused API/query/page tests; pnpm check; pnpm build;
+        pnpm test:e2e; git diff --check
+Results: 26 Vitest files and 276 tests, formatting, ESLint, strict TypeScript,
+         production build, and all 4 Chromium journeys pass
+Requirements: PR-03; stale-response invariant; complete quote atomicity;
+              request cancellation; selection/response relationship validation
+Risks/assumptions: an aborted request may already have reached the backend;
+                   client safety therefore relies on both best-effort abort and
+                   the independent intent-id cache guard
+Next: M3-04
 ```
 
 ## Milestone M4 — Countdown, polling, and lifecycle

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { paymentReferenceSchema } from "./contracts/primitives";
-import { checkoutQueryKeys } from "./checkout-query-keys";
+import { checkoutMutationKeys, checkoutQueryKeys } from "./checkout-query-keys";
 
 describe("checkout query keys", () => {
   it("keeps catalog and payment caches under one feature namespace", () => {
@@ -24,5 +24,13 @@ describe("checkout query keys", () => {
     expect(checkoutQueryKeys.payment(first)).not.toEqual(
       checkoutQueryKeys.payment(second),
     );
+  });
+
+  it("keeps mutation identity separate from payment-reference query keys", () => {
+    expect(checkoutMutationKeys.createPayment()).toEqual([
+      "checkout",
+      "mutations",
+      "create-payment",
+    ]);
   });
 });
