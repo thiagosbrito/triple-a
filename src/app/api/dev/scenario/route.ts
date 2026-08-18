@@ -1,4 +1,8 @@
 import {
+  paymentScenarioControlRequestSchema,
+  paymentScenarioControlResponseSchema,
+} from "@/features/checkout/api/contracts/development";
+import {
   BAD_REQUEST_PROBLEM_TITLE,
   BAD_REQUEST_PROBLEM_TYPE,
   NOT_FOUND_PROBLEM_TITLE,
@@ -9,8 +13,6 @@ import { paymentReferenceSchema } from "@/features/checkout/api/contracts/primit
 import { UnavailablePaymentScenarioError } from "@/mocks/payment-simulator";
 import {
   PaymentScenarioNotFoundError,
-  paymentScenarioControlRequestSchema,
-  paymentScenarioControlResponseSchema,
   paymentScenarioStore,
 } from "@/mocks/scenario-store";
 

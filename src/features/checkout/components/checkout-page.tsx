@@ -1,27 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { CheckoutSession } from "../config/checkout-session";
 import type { PaymentMethodSelection } from "../domain/payment-method";
 import { useBrowserLocale } from "../hooks/use-browser-locale";
 import { useCurrencies } from "../hooks/use-currencies";
 import { useCreatePayment } from "../hooks/use-create-payment";
+import {
+  DevelopmentScenarioPanel,
+  DevelopmentToolsEmptyPanel,
+} from "./development-scenario-panel";
 import { IssuedPaymentFlow } from "./issued-payment-flow";
 import { OrderSummaryCard } from "./order-summary";
 import { PaymentMethodSelector } from "./payment-method-selector";
 
 type CheckoutPageProps = Readonly<{
   session: CheckoutSession;
+  showDevelopmentTools?: boolean;
 }>;
 
-export function CheckoutPage({ session }: CheckoutPageProps) {
+export function CheckoutPage({
+  session,
+  showDevelopmentTools = false,
+}: CheckoutPageProps) {
   const locale = useBrowserLocale();
   const currencies = useCurrencies();
   const quote = useCreatePayment(session);
   const [selection, setSelection] = useState<PaymentMethodSelection | null>(
     null,
   );
+  const [developmentToolsOpen, setDevelopmentToolsOpen] = useState(false);
+  const developmentToolsLauncher = useRef<HTMLButtonElement>(null);
   const selectedCurrency = selection
     ? currencies.data?.currencies.find(
         (currency) => currency.code === selection.currency,
@@ -44,16 +54,60 @@ export function CheckoutPage({ session }: CheckoutPageProps) {
     }
 
     setSelection(nextSelection);
+    setDevelopmentToolsOpen(false);
     quote.requestQuote(nextSelection, currency.decimals);
   }
 
   function changePaymentMethod(): void {
+    setDevelopmentToolsOpen(false);
     quote.reset();
     setSelection(null);
   }
 
+  function closeDevelopmentTools(): void {
+    setDevelopmentToolsOpen(false);
+    requestAnimationFrame(() => developmentToolsLauncher.current?.focus());
+  }
+
+  useEffect(() => {
+    if (!showDevelopmentTools) {
+      return;
+    }
+
+    function handleShortcut(event: KeyboardEvent): void {
+      const togglesTools =
+        (event.metaKey || event.ctrlKey) &&
+        event.shiftKey &&
+        !event.altKey &&
+        event.key.toLowerCase() === "k";
+
+      if (togglesTools) {
+        event.preventDefault();
+        setDevelopmentToolsOpen((isOpen) => {
+          if (isOpen) {
+            requestAnimationFrame(() =>
+              developmentToolsLauncher.current?.focus(),
+            );
+          }
+          return !isOpen;
+        });
+        return;
+      }
+
+      if (event.key === "Escape" && developmentToolsOpen) {
+        event.preventDefault();
+        closeDevelopmentTools();
+      }
+    }
+
+    window.addEventListener("keydown", handleShortcut);
+    return () => window.removeEventListener("keydown", handleShortcut);
+  }, [developmentToolsOpen, quote.data, showDevelopmentTools]);
+
   return (
-    <main className="min-h-dvh bg-slate-50 px-4 py-6 text-slate-950 sm:px-6 sm:py-10 lg:px-8">
+    <main
+      className={`min-h-dvh bg-slate-50 px-4 py-6 text-slate-950 transition-[padding] duration-200 sm:px-6 sm:py-10 lg:px-8 ${developmentToolsOpen && showDevelopmentTools ? "xl:pr-[24rem]" : ""}`}
+    >
       <div className="mx-auto max-w-6xl">
         <header className="mb-8 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -208,6 +262,34 @@ export function CheckoutPage({ session }: CheckoutPageProps) {
           Verify the asset, network, and destination before sending. Blockchain
           transfers cannot be reversed.
         </footer>
+
+        {showDevelopmentTools && !developmentToolsOpen ? (
+          <button
+            ref={developmentToolsLauncher}
+            type="button"
+            aria-controls="development-tools-panel"
+            aria-expanded="false"
+            className="fixed right-4 bottom-4 z-40 min-h-11 rounded-full border border-violet-300 bg-violet-900 px-4 py-2 text-sm font-semibold text-white shadow-lg outline-offset-2 hover:bg-violet-800 focus-visible:outline-2 focus-visible:outline-violet-950"
+            onClick={() => setDevelopmentToolsOpen(true)}
+          >
+            Dev tools
+            <span className="ml-2 hidden text-xs font-normal text-violet-200 sm:inline">
+              ⌘/Ctrl ⇧ K
+            </span>
+          </button>
+        ) : null}
+
+        {showDevelopmentTools && quote.data && developmentToolsOpen ? (
+          <DevelopmentScenarioPanel
+            key={quote.data.payment_reference}
+            paymentReference={quote.data.payment_reference}
+            onClose={closeDevelopmentTools}
+          />
+        ) : null}
+
+        {showDevelopmentTools && developmentToolsOpen && !quote.data ? (
+          <DevelopmentToolsEmptyPanel onClose={closeDevelopmentTools} />
+        ) : null}
       </div>
     </main>
   );

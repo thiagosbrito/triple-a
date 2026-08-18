@@ -1,6 +1,7 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 
 import { currenciesResponseSchema } from "@/features/checkout/api/contracts/currencies";
+import { paymentRequestMetricsResponseSchema } from "@/features/checkout/api/contracts/development";
 import { paymentStatusUpdateSchema } from "@/features/checkout/api/contracts/payment-status";
 import {
   PAYMENT_STATUS,
@@ -14,7 +15,6 @@ import {
   internalServerErrorProblemSchema,
   quoteNotExpiredProblemSchema,
 } from "@/features/checkout/api/contracts/problem";
-import { paymentRequestMetricsResponseSchema } from "@/mocks/request-instrumentation";
 
 type FailureConfiguration =
   | { mode: "none" }

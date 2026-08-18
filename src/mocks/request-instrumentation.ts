@@ -1,23 +1,7 @@
-import { z } from "zod";
-
-import { paymentReferenceSchema } from "@/features/checkout/api/contracts/primitives";
-
-export const requestMetricsSchema = z.strictObject({
-  current_in_flight: z.int().nonnegative(),
-  maximum_in_flight: z.int().nonnegative(),
-  total_started: z.int().nonnegative(),
-  total_completed: z.int().nonnegative(),
-});
-
-export const paymentRequestMetricsResponseSchema = z.strictObject({
-  payment_reference: paymentReferenceSchema,
-  metrics: requestMetricsSchema,
-});
-
-export type RequestMetrics = z.infer<typeof requestMetricsSchema>;
-export type PaymentRequestMetricsResponse = z.infer<
-  typeof paymentRequestMetricsResponseSchema
->;
+import {
+  requestMetricsSchema,
+  type RequestMetrics,
+} from "@/features/checkout/api/contracts/development";
 
 type MutableRequestMetrics = {
   current_in_flight: number;

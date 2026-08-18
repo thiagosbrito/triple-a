@@ -1,3 +1,4 @@
+import { paymentRequestMetricsResponseSchema } from "@/features/checkout/api/contracts/development";
 import { paymentReferenceSchema } from "@/features/checkout/api/contracts/primitives";
 import {
   BAD_REQUEST_PROBLEM_TITLE,
@@ -6,10 +7,7 @@ import {
   badRequestProblemSchema,
   notFoundProblemSchema,
 } from "@/features/checkout/api/contracts/problem";
-import {
-  paymentRequestMetricsResponseSchema,
-  requestInstrumentation,
-} from "@/mocks/request-instrumentation";
+import { requestInstrumentation } from "@/mocks/request-instrumentation";
 import { paymentScenarioStore } from "@/mocks/scenario-store";
 
 const INVALID_REFERENCE_DETAIL =

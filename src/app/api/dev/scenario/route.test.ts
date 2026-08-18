@@ -1,12 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { paymentScenarioControlResponseSchema } from "@/features/checkout/api/contracts/development";
 import { createPaymentRequestSchema } from "@/features/checkout/api/contracts/payments";
 import { badRequestProblemSchema } from "@/features/checkout/api/contracts/problem";
 import { createMockPayment } from "@/mocks/quote-factory";
-import {
-  paymentScenarioControlResponseSchema,
-  paymentScenarioStore,
-} from "@/mocks/scenario-store";
+import { paymentScenarioStore } from "@/mocks/scenario-store";
 
 import { GET, PUT } from "./route";
 

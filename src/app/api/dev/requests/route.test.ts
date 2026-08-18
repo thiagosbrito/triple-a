@@ -1,11 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { paymentRequestMetricsResponseSchema } from "@/features/checkout/api/contracts/development";
 import { createPaymentRequestSchema } from "@/features/checkout/api/contracts/payments";
 import { createMockPayment } from "@/mocks/quote-factory";
-import {
-  paymentRequestMetricsResponseSchema,
-  requestInstrumentation,
-} from "@/mocks/request-instrumentation";
+import { requestInstrumentation } from "@/mocks/request-instrumentation";
 import { paymentScenarioStore } from "@/mocks/scenario-store";
 
 import { DELETE, GET } from "./route";

@@ -8,6 +8,12 @@ export const checkoutQueryKeys = {
     [...checkoutQueryKeys.payments(), reference] as const,
   paymentStatus: (reference: PaymentReference) =>
     [...checkoutQueryKeys.payment(reference), "status"] as const,
+  development: (reference: PaymentReference) =>
+    [...checkoutQueryKeys.payment(reference), "development"] as const,
+  developmentScenario: (reference: PaymentReference) =>
+    [...checkoutQueryKeys.development(reference), "scenario"] as const,
+  developmentRequestMetrics: (reference: PaymentReference) =>
+    [...checkoutQueryKeys.development(reference), "request-metrics"] as const,
 };
 
 export const checkoutMutationKeys = {
@@ -15,4 +21,16 @@ export const checkoutMutationKeys = {
   createPayment: () => [...checkoutMutationKeys.all, "create-payment"] as const,
   requotePayment: (reference: PaymentReference) =>
     [...checkoutMutationKeys.all, "requote-payment", reference] as const,
+  setDevelopmentScenario: (reference: PaymentReference) =>
+    [
+      ...checkoutMutationKeys.all,
+      "set-development-scenario",
+      reference,
+    ] as const,
+  resetDevelopmentRequestMetrics: (reference: PaymentReference) =>
+    [
+      ...checkoutMutationKeys.all,
+      "reset-development-request-metrics",
+      reference,
+    ] as const,
 };

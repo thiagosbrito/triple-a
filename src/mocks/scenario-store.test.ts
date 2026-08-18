@@ -1,14 +1,16 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
+import {
+  MAX_SCENARIO_DELAY_MILLISECONDS,
+  paymentScenarioConfigurationSchema,
+} from "@/features/checkout/api/contracts/development";
 import { PAYMENT_STATUS } from "@/features/checkout/api/contracts/payment-status-values";
 import { createPaymentRequestSchema } from "@/features/checkout/api/contracts/payments";
 import { createMockPayment } from "@/mocks/quote-factory";
 
 import {
-  MAX_SCENARIO_DELAY_MILLISECONDS,
   PaymentScenarioNotFoundError,
   PaymentScenarioStore,
-  paymentScenarioConfigurationSchema,
 } from "./scenario-store";
 
 const initialTime = new Date("2026-08-14T08:44:02.120Z");

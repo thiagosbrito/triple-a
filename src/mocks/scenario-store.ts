@@ -1,11 +1,15 @@
-import { z } from "zod";
-
+import {
+  PAYMENT_SCENARIO_MODES,
+  TRANSPORT_FAILURE_KINDS,
+  TRANSPORT_FAILURE_MODES,
+  paymentScenarioConfigurationSchema,
+  type PaymentScenarioConfiguration,
+} from "@/features/checkout/api/contracts/development";
 import {
   paymentStatusUpdateSchema,
   type PaymentStatusUpdate,
 } from "@/features/checkout/api/contracts/payment-status";
 import {
-  paymentStatusSchema,
   PAYMENT_STATUS,
   type PaymentStatus,
 } from "@/features/checkout/api/contracts/payment-status-values";
@@ -13,69 +17,10 @@ import {
   createPaymentResponseSchema,
   type CreatePaymentResponse,
 } from "@/features/checkout/api/contracts/payments";
-import { paymentReferenceSchema } from "@/features/checkout/api/contracts/primitives";
 import {
   createPaymentStatusUpdate,
   getHappyPathStatuses,
 } from "@/mocks/payment-simulator";
-
-export const PAYMENT_SCENARIO_MODES = ["exact_state", "progression"] as const;
-export const TRANSPORT_FAILURE_MODES = [
-  "none",
-  "next_request",
-  "persistent",
-] as const;
-export const TRANSPORT_FAILURE_KINDS = [
-  "http_500",
-  "network_disconnect",
-] as const;
-export const MAX_SCENARIO_DELAY_MILLISECONDS = 30_000;
-
-export const paymentScenarioSchema = z.discriminatedUnion("mode", [
-  z.strictObject({
-    mode: z.literal(PAYMENT_SCENARIO_MODES[0]),
-    status: paymentStatusSchema,
-  }),
-  z.strictObject({ mode: z.literal(PAYMENT_SCENARIO_MODES[1]) }),
-]);
-
-export const transportFailureSchema = z.discriminatedUnion("mode", [
-  z.strictObject({ mode: z.literal(TRANSPORT_FAILURE_MODES[0]) }),
-  z.strictObject({
-    mode: z.literal(TRANSPORT_FAILURE_MODES[1]),
-    kind: z.enum(TRANSPORT_FAILURE_KINDS),
-  }),
-  z.strictObject({
-    mode: z.literal(TRANSPORT_FAILURE_MODES[2]),
-    kind: z.enum(TRANSPORT_FAILURE_KINDS),
-  }),
-]);
-
-export const paymentScenarioConfigurationSchema = z.strictObject({
-  scenario: paymentScenarioSchema,
-  response_delay_ms: z.int().min(0).max(MAX_SCENARIO_DELAY_MILLISECONDS),
-  failure: transportFailureSchema,
-});
-
-export const paymentScenarioControlRequestSchema = z.strictObject({
-  payment_reference: paymentReferenceSchema,
-  configuration: paymentScenarioConfigurationSchema,
-});
-
-export const paymentScenarioControlResponseSchema =
-  paymentScenarioControlRequestSchema;
-
-export type PaymentScenario = z.infer<typeof paymentScenarioSchema>;
-export type TransportFailure = z.infer<typeof transportFailureSchema>;
-export type PaymentScenarioConfiguration = z.infer<
-  typeof paymentScenarioConfigurationSchema
->;
-export type PaymentScenarioControlRequest = z.infer<
-  typeof paymentScenarioControlRequestSchema
->;
-export type PaymentScenarioControlResponse = z.infer<
-  typeof paymentScenarioControlResponseSchema
->;
 
 export const DEFAULT_PAYMENT_SCENARIO_CONFIGURATION =
   paymentScenarioConfigurationSchema.parse({
