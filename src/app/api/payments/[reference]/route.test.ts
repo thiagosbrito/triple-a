@@ -8,6 +8,7 @@ import {
   notFoundProblemSchema,
 } from "@/features/checkout/api/contracts/problem";
 import { createMockPayment } from "@/mocks/quote-factory";
+import { requestInstrumentation } from "@/mocks/request-instrumentation";
 import { paymentScenarioStore } from "@/mocks/scenario-store";
 
 import { GET } from "./route";
@@ -56,11 +57,13 @@ function configuration(
 
 beforeEach(() => {
   paymentScenarioStore.clear();
+  requestInstrumentation.reset();
 });
 
 afterEach(() => {
   vi.useRealTimers();
   paymentScenarioStore.clear();
+  requestInstrumentation.reset();
 });
 
 describe("GET /api/payments/:reference", () => {
@@ -197,5 +200,44 @@ describe("GET /api/payments/:reference", () => {
     );
 
     await expect(response.text()).rejects.toThrow(/network disconnect/i);
+  });
+
+  it("records overlapping delayed requests for later client assertions", async () => {
+    vi.useFakeTimers();
+    const payment = createRegisteredPayment();
+    paymentScenarioStore.configure(
+      payment.payment_reference,
+      configuration(PAYMENT_STATUS.awaiting_payment, {
+        responseDelayMilliseconds: 1_000,
+      }),
+      now,
+    );
+
+    const first = GET(
+      request(payment.payment_reference),
+      context(payment.payment_reference),
+    );
+    const second = GET(
+      request(payment.payment_reference),
+      context(payment.payment_reference),
+    );
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(requestInstrumentation.snapshot(payment.payment_reference)).toEqual({
+      current_in_flight: 2,
+      maximum_in_flight: 2,
+      total_started: 2,
+      total_completed: 0,
+    });
+
+    await vi.advanceTimersByTimeAsync(1_000);
+    await Promise.all([first, second]);
+
+    expect(requestInstrumentation.snapshot(payment.payment_reference)).toEqual({
+      current_in_flight: 0,
+      maximum_in_flight: 2,
+      total_started: 2,
+      total_completed: 2,
+    });
   });
 });

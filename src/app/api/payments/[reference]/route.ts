@@ -11,6 +11,7 @@ import {
   paymentScenarioStore,
   type PaymentSimulationInstruction,
 } from "@/mocks/scenario-store";
+import { requestInstrumentation } from "@/mocks/request-instrumentation";
 
 type PaymentRouteContext = {
   params: Promise<{ reference: string }>;
@@ -98,9 +99,17 @@ export async function GET(
   }
 
   try {
-    return await respondToInstruction(
-      paymentScenarioStore.simulate(parsedReference.data),
-    );
+    const instruction = paymentScenarioStore.simulate(parsedReference.data);
+    const completeRequest =
+      process.env.NODE_ENV === "production"
+        ? () => undefined
+        : requestInstrumentation.begin(parsedReference.data);
+
+    try {
+      return await respondToInstruction(instruction);
+    } finally {
+      completeRequest();
+    }
   } catch (error) {
     if (error instanceof PaymentScenarioNotFoundError) {
       return notFound();

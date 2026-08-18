@@ -466,6 +466,13 @@ payment reference. The status route models a network disconnect with an errored
 response stream; real Next.js verification produces an empty client reply and
 an expected server-side pipe error rather than a lifecycle payload.
 
+Development status requests are instrumented per payment reference with the
+current in-flight count, maximum in-flight count, and total started/completed
+counts. `GET` and `DELETE /api/dev/requests` expose and reset those validated
+metrics outside production. The shopper application never imports or mutates
+the instrumentation; later polling tests use the HTTP evidence to prove a
+maximum of one in-flight request.
+
 ## Accessibility requirements
 
 - Semantic headings reflect the page and status hierarchy.

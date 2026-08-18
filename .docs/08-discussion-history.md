@@ -717,3 +717,20 @@ all 243 repository tests, the production build, and live Next.js verification
 passed. Live HTTP returned the documented 409 before expiry, then returned a
 complete 201 USDC/Polygon replacement after authoritative expiry was triggered
 through the development endpoint. The temporary server was stopped.
+
+## 2026-08-18 - M2-06 polling-concurrency instrumentation
+
+The status route now records current and maximum in-flight request counts plus
+total starts/completions for each payment reference in non-production runtimes.
+The development metrics endpoint reads and resets this evidence without any
+shopper-UI dependency. Completion handles are idempotent, references remain
+isolated, and resetting metrics does not corrupt an already-issued completion
+handle.
+
+The first live overlap attempt included cold route compilation and reported a
+maximum of one, so it was rejected as concurrency evidence. After warming the
+route and resetting metrics, two deliberately simultaneous one-second requests
+both completed in approximately 1.01 seconds and reported maximum in flight of
+two with two starts and two completions. This proves the instrumentation can
+detect overlap when it exists. All 253 repository tests and the production
+build passed; the development metrics route returns 404 in production.
