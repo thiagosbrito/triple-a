@@ -42,13 +42,14 @@ Only the lead agent updates task status. At most one critical-path task may be
 
 ## Current milestone
 
-**Milestone M2 complete — deterministic mock API.**
+**Milestone M3 active — safe quote experience.**
 
 ### Next task
 
-`M3-01` — Add the TanStack Query provider, typed API client, and query keys.
-This is ready but has not started because the candidate authorized autonomous
-work through M2 only.
+`M3-02` — Build the merchant/order summary and payment-method selection step.
+M3-01 passed its acceptance gate on 2026-08-18. Figma remains a visual
+reference for M3-08; its MCP read tools are not yet exposed in the current VS
+Code session.
 
 Milestone M1 is committed and verified. Contracts, lifecycle presentation,
 exact money handling, deadline reconciliation, polling policy, and all supplied
@@ -579,8 +580,8 @@ owners if they do not share files. Route integration remains lead-owned.
 
 | ID | Task | Depends on | Status | Owner | Acceptance gate / evidence |
 | --- | --- | --- | --- | --- | --- |
-| M3-01 | Add QueryClient provider, typed API client, and query keys. | M1-09, M2-07 | `READY` | Unassigned | Untrusted responses validate; remote state has one owner. |
-| M3-02 | Build merchant/order summary and method-selection step. | M3-01 | `BLOCKED` | Unassigned | Locale-formatted fiat and every API-provided method are accessible. |
+| M3-01 | Add QueryClient provider, typed API client, and query keys. | M1-09, M2-07 | `DONE` | Lead | QueryClient ownership, cancelable typed transport, runtime success/problem validation, reference-aware keys, 267 repository tests, build, and audit pass. |
+| M3-02 | Build merchant/order summary and method-selection step. | M3-01 | `READY` | Unassigned | Locale-formatted fiat and every API-provided method are accessible. |
 | M3-03 | Implement quote mutation and stale-response protection. | M3-01, M3-02 | `BLOCKED` | Lead | Obsolete quote responses cannot replace current intent. |
 | M3-04 | Build fixed issued-method and guarded-change flow. | M3-03 | `BLOCKED` | Unassigned | Active instructions are not edited in place; warning and confirmation work. |
 | M3-05 | Build exact amount, fee breakdown, address/copy, and network safety UI. | M3-03 | `BLOCKED` | Unassigned | One quote supplies all fields; network is explicit; copy is exact and announced; inline guidance explains the irreversible transfer steps without relying on the dead problem-type URI. |
@@ -595,6 +596,30 @@ After component props and design tokens are frozen, independent presentational
 components and accessibility test-case authoring may run in parallel. Query
 integration, quote identity, shared styling tokens, and final composition remain
 single-owner.
+
+### M3-01 evidence
+
+```text
+Task: M3-01
+Status: DONE
+Owner: Lead
+Files: package.json; pnpm-lock.yaml; src/app/providers.tsx;
+       src/app/providers.test.tsx; src/app/layout.tsx;
+       src/features/checkout/api/checkout-api.ts and tests;
+       src/features/checkout/api/checkout-query-keys.ts and tests;
+       problem contract union and architecture/execution documentation
+Checks: 34 focused tests; pnpm check; pnpm build; pnpm audit --json;
+        git diff --check
+Results: exact @tanstack/react-query 5.101.4; 26 Vitest files and 267 tests,
+         formatting, ESLint, strict TypeScript, and production build pass;
+         0 advisories across 558 dependencies
+Requirements: one remote-state owner; validated HTTP boundary; cancellation;
+              reference-aware cache identity; transport/business separation
+Risks/assumptions: host Node 24.16.0 remains below the repository's pinned
+                   24.18.0 minimum; Figma MCP read tools remain unavailable in
+                   this VS Code session and are not required until M3-08
+Next: M3-02
+```
 
 ## Milestone M4 — Countdown, polling, and lifecycle
 

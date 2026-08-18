@@ -757,3 +757,33 @@ and a dependency audit with zero advisories across 556 dependencies. The
 intentional disconnect still produces an expected server-side pipe-error log
 while the client observes a network failure. Exact README commands now cover
 all controls, request metrics, and requote behavior.
+
+## 2026-08-18 - M3 start and Figma availability
+
+The candidate started M3 and confirmed that the Figma Make prototype is visual
+reference material, not a replacement for the planned task order or the
+accepted payment-safety behavior. The Figma design-to-code skill is installed,
+but its MCP read tools are not exposed in the current VS Code session. Visual
+extraction therefore remains scheduled for M3-08 and does not block the query,
+transport, or base shopper-flow work. A later reload or connection refresh may
+make the read tools available.
+
+M3-01 uses exact `@tanstack/react-query` 5.101.4, the latest stable registry
+release verified on 2026-08-18. The implementation follows the current
+TanStack App Router guidance: a fresh query client during server rendering and
+one stable query client in the browser. No global retry or polling defaults are
+introduced before the operation-specific policies in M4/M5.
+
+The typed API client validates outbound identifiers and request bodies, reads
+all response bodies as untrusted data, validates success and problem payloads,
+checks HTTP/body status agreement, and forwards cancellation signals. Valid
+server problems, protocol violations, and transport failures remain distinct;
+in particular, a fetch or response-stream failure is never converted into a
+payment business state. Central payment query keys include the validated
+payment reference so stale data cannot cross payment identities.
+
+The M3-01 gate passed 34 focused tests, all 267 repository tests, formatting,
+ESLint, strict TypeScript, the production build, and a dependency audit with
+zero advisories across 558 dependencies. The existing host Node 24.16.0 versus
+the repository's 24.18.0 minimum warning remains. No commit was created before
+presenting the candidate with the focused M3 commit strategy.

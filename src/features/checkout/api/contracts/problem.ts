@@ -73,12 +73,15 @@ export type QuoteNotExpiredProblem = z.infer<
   typeof quoteNotExpiredProblemSchema
 >;
 
-export type KnownApiProblem =
-  | BadRequestProblem
-  | NotFoundProblem
-  | InternalServerErrorProblem
-  | ConflictProblem
-  | QuoteNotExpiredProblem;
+export const knownApiProblemSchema = z.union([
+  badRequestProblemSchema,
+  notFoundProblemSchema,
+  internalServerErrorProblemSchema,
+  conflictProblemSchema,
+  quoteNotExpiredProblemSchema,
+]);
+
+export type KnownApiProblem = z.infer<typeof knownApiProblemSchema>;
 
 export const API_OPERATIONS = [
   "get_currencies",

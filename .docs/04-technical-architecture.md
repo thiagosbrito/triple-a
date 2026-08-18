@@ -1,6 +1,6 @@
 # Technical Architecture
 
-Status: Foundation scaffolded; contract implementation in progress
+Status: M3 query and transport foundation in progress
 Scope: Architecture and implementation baseline
 
 ## Goals
@@ -25,7 +25,7 @@ The architecture must make the following properties easy to verify and explain:
 | Package manager | pnpm 11.22.0 | Fast, deterministic installs; efficient content-addressable storage; strict dependency boundaries. Pin through `packageManager` and commit `pnpm-lock.yaml`. |
 | Server runtime | Node.js 24.18.0 LTS | Current Node 24 LTS patch on 2026-08-17; exact development pin prevents environment drift. |
 | Styling | Tailwind CSS | Requested preference; supports a small, consistent design system without a large component dependency. |
-| Remote state | TanStack Query | Owns fetching, mutation state, cancellation, retries, cache identity, and status polling. |
+| Remote state | TanStack Query 5.101.4 | Owns fetching, mutation state, cancellation, retries, cache identity, and status polling. |
 | Client global state | None initially | There is no demonstrated cross-route or cross-feature client state that justifies Redux. |
 | Runtime validation | Zod | Converts untrusted mock/API JSON into explicit domain-safe values. |
 | Decimal arithmetic | `big.js` with strict mode | Small, dependency-free exact decimal comparison/subtraction; strict mode rejects primitive number construction and imprecise number conversion. |
@@ -256,6 +256,35 @@ Security evidence reviewed on 2026-08-17:
 | Development scenario | Mock scenario controller | Local development only |
 
 ## API boundary
+
+### Implemented client boundary
+
+`src/features/checkout/api/checkout-api.ts` is the only shopper-facing module
+that constructs the assessment endpoint paths or reads response JSON. It:
+
+- accepts an `AbortSignal` for every operation so TanStack Query can cancel
+  obsolete requests;
+- validates outbound request bodies and payment references;
+- treats response bodies as `unknown` until the operation's Zod schema accepts
+  them;
+- checks the expected success status and agreement between an error body's
+  status and the actual HTTP status;
+- throws `ApiProblemError` for a valid `application/problem+json` model and
+  `ProtocolError` for malformed or unknown protocol data;
+- preserves fetch, abort, and response-stream failures as transport errors
+  rather than turning them into payment lifecycle states.
+
+The fetch implementation is injectable for focused tests, while the exported
+browser instance uses same-origin relative paths. Query keys live in one
+feature-owned factory. Payment-status keys include the validated payment
+reference, preventing one payment's response from sharing another payment's
+cache identity.
+
+The App Router layout renders a client provider around `children`, leaving the
+HTML shell as a Server Component. Following the current TanStack App Router
+guidance, server renders receive a fresh `QueryClient`, while the browser keeps
+one client for the application session. Polling and retry defaults remain
+operation-specific work for M4/M5 rather than unsafe global defaults.
 
 ### `GET /api/currencies`
 
