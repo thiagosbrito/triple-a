@@ -18,7 +18,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "pnpm build && pnpm start",
+    // Mock scenario controls are intentionally development-only. Production
+    // compilation remains a separate required `pnpm build` gate.
+    command: "pnpm dev",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
     url: "http://127.0.0.1:3000",

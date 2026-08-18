@@ -189,3 +189,8 @@ prove:
 - Documentation matches implemented behavior and records remaining limitations.
 - The README's agent-collaboration section is based on actual decisions and
   rejected work.
+
+Mock-API Playwright integration runs against `next dev` because evaluator
+scenario endpoints are intentionally unavailable in a production runtime. The
+same delivery gate separately runs `next build`, so exercising development
+controls does not replace production compilation and framework type analysis.

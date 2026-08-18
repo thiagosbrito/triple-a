@@ -4,8 +4,8 @@ A safety-focused hosted stablecoin checkout for the Triple-A Senior Fullstack
 Engineer take-home assessment. The implementation uses a Next.js frontend and
 colocated deterministic mock HTTP API.
 
-> Current status: repository foundation complete; checkout feature development
-> has not started. Follow progress in the
+> Current status: deterministic mock HTTP API complete; checkout feature
+> development has not started. Follow progress in the
 > [delivery task list](./.docs/09-task-list.md).
 
 ## Scenario
@@ -103,15 +103,89 @@ documents are:
 
 ## Mock scenarios
 
-Scenario controls are not implemented yet. Milestones M2 and M5 will add and
-document reproducible triggers for:
+Run `pnpm dev` before using the controls below. They deliberately return 404 in
+a production runtime and will later be driven by a development-only UI panel.
 
-- `awaiting_payment`, `detected`, `confirming`, `paid`;
-- `underpaid`, `overpaid`, `expired`, `failed`;
-- slow responses, transient transport failure, and persistent failure.
+Create a payment on a multi-confirmation method so every lifecycle state,
+including `confirming`, is compatible with its issued quote:
 
-This section will contain exact evaluator instructions only after those controls
-exist and have been verified.
+```bash
+curl -sS -X POST http://localhost:3000/api/payments \
+  -H 'Content-Type: application/json' \
+  --data '{"order_id":"ORD-88213","currency":"USDT","network":"ethereum"}'
+```
+
+The deterministic assessment reference is `AQH-100306-PMT`. Pin it to any of
+the eight statuses by replacing `paid` below with `awaiting_payment`, `detected`,
+`confirming`, `paid`, `underpaid`, `overpaid`, `expired`, or `failed`:
+
+```bash
+curl -sS -X PUT http://localhost:3000/api/dev/scenario \
+  -H 'Content-Type: application/json' \
+  --data '{"payment_reference":"AQH-100306-PMT","configuration":{"scenario":{"mode":"exact_state","status":"paid"},"response_delay_ms":0,"failure":{"mode":"none"}}}'
+```
+
+Read the shopper-facing status endpoint:
+
+```bash
+curl -i http://localhost:3000/api/payments/AQH-100306-PMT
+```
+
+Use deterministic happy-path progression instead of a pinned state:
+
+```bash
+curl -sS -X PUT http://localhost:3000/api/dev/scenario \
+  -H 'Content-Type: application/json' \
+  --data '{"payment_reference":"AQH-100306-PMT","configuration":{"scenario":{"mode":"progression"},"response_delay_ms":0,"failure":{"mode":"none"}}}'
+```
+
+Each subsequent status request advances through `awaiting_payment`, `detected`,
+`confirming`, and `paid`. One-confirmation methods safely skip `confirming`
+because they have no valid positive intermediate confirmation count.
+
+Transport behavior is orthogonal to the lifecycle scenario. Set
+`response_delay_ms` up to `30000`, and choose one of these failure objects:
+
+```json
+{ "mode": "none" }
+{ "mode": "next_request", "kind": "http_500" }
+{ "mode": "next_request", "kind": "network_disconnect" }
+{ "mode": "persistent", "kind": "http_500" }
+{ "mode": "persistent", "kind": "network_disconnect" }
+```
+
+For example, a five-second one-shot server failure uses the same PUT command
+with this configuration:
+
+```json
+{
+  "scenario": { "mode": "exact_state", "status": "detected" },
+  "response_delay_ms": 5000,
+  "failure": { "mode": "next_request", "kind": "http_500" }
+}
+```
+
+Inspect or reset the request-concurrency evidence:
+
+```bash
+curl -sS 'http://localhost:3000/api/dev/requests?payment_reference=AQH-100306-PMT'
+curl -sS -X DELETE 'http://localhost:3000/api/dev/requests?payment_reference=AQH-100306-PMT'
+```
+
+After pinning the payment to `expired`, request a replacement quote. The
+reference is preserved and every quote-dependent field is replaced together:
+
+```bash
+curl -sS -X POST \
+  http://localhost:3000/api/payments/AQH-100306-PMT/requote \
+  -H 'Content-Type: application/json' \
+  --data '{"currency":"USDC","network":"polygon"}'
+```
+
+Calling requote while the awaiting quote is still valid returns the documented
+409 problem. Requote is also rejected after funds are detected or the payment
+has entered another state where replacement could encourage a duplicate
+transfer.
 
 ## Prioritization and omissions
 
@@ -142,6 +216,6 @@ not manufacture rejected outputs to satisfy a count.
 ## Security baseline
 
 Framework and runtime versions are exact and were checked against official
-release guidance before scaffolding. On 2026-08-17, `pnpm audit --json` reported
-zero advisories across 554 locked dependencies. This is a point-in-time result;
-the advisory and dependency audit will be repeated before submission.
+release guidance before scaffolding. On 2026-08-18, `pnpm audit --json` reported
+zero advisories across 556 dependencies. This is a point-in-time result; the
+advisory and dependency audit will be repeated before submission.

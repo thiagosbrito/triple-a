@@ -734,3 +734,26 @@ both completed in approximately 1.01 seconds and reported maximum in flight of
 two with two starts and two completions. This proves the instrumentation can
 detect overlap when it exists. All 253 repository tests and the production
 build passed; the development metrics route returns 404 in production.
+
+## 2026-08-18 - M2-07 real-HTTP milestone audit
+
+The final M2 Playwright suite exercises the real Next.js HTTP boundary without
+mutating the scenario store directly. It verifies the six-method catalog,
+payment creation, every lifecycle state, multi-confirmation progression,
+delayed overlap metrics, one-shot recovery, persistent HTTP failure, a real
+empty-reply disconnect, the documented early-requote conflict, and atomic
+requote after authoritative expiry.
+
+Because scenario controls intentionally return 404 in production, Playwright
+now starts `next dev`; `pnpm build` remains a separate required gate. The first
+browser run exposed Next's development-origin warning for the configured
+`127.0.0.1` base URL. The installed Next.js documentation was checked and the
+narrow `allowedDevOrigins: ["127.0.0.1"]` setting removed that warning without
+opening additional origins.
+
+The final M2 gate passed formatting, ESLint, strict TypeScript, 23 Vitest files
+with 253 tests, four Playwright tests, the production build, diff validation,
+and a dependency audit with zero advisories across 556 dependencies. The
+intentional disconnect still produces an expected server-side pipe-error log
+while the client observes a network failure. Exact README commands now cover
+all controls, request metrics, and requote behavior.

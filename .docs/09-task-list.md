@@ -42,21 +42,22 @@ Only the lead agent updates task status. At most one critical-path task may be
 
 ## Current milestone
 
-**Milestone M2 in progress — deterministic mock API.**
+**Milestone M2 complete — deterministic mock API.**
 
 ### Next task
 
-`M2-07` — Complete the route/contract integration audit, final M2 documentation,
-and milestone commit.
+`M3-01` — Add the TanStack Query provider, typed API client, and query keys.
+This is ready but has not started because the candidate authorized autonomous
+work through M2 only.
 
 Milestone M1 is committed and verified. Contracts, lifecycle presentation,
 exact money handling, deadline reconciliation, polling policy, and all supplied
 PDF fixtures are covered. M2-01 is committed locally as `5d47f7d`, and M2-02 is
 committed locally as `c4be2d9`, and M2-03 is committed locally as `00ab520`.
 M2-04 is committed locally as `511b969`, and M2-05 is committed locally as
-`afbcdc1`. M2-06 has passed focused, full, build, and live concurrency
-verification. The candidate authorized completion of the remaining M2
-milestone. Shopper-facing feature work has not started.
+`afbcdc1`. M2-06 is committed locally as `0f85896`; M2-07 has passed the final
+unit, browser, build, audit, and documentation gates. Shopper-facing feature
+work has not started.
 
 ## Milestone M0 — Design gates and repository foundation
 
@@ -401,7 +402,7 @@ After schemas/interfaces are frozen by the lead:
 | M2-04 | Implement `GET /api/payments/:reference`. | M2-03 | `DONE` | Lead | All eight states, delay, one-shot/persistent HTTP failure, and a real empty-reply disconnect are triggerable through validated HTTP routes; full tests, build, and live Next.js checks pass. |
 | M2-05 | Implement requote route and 409 behavior. | M2-02, M2-03 | `DONE` | Lead | Same-reference complete replacement quote, exact three-minute deadline, typed early 409, and lifecycle-safe conflict behavior pass focused/full tests, build, and live HTTP verification. |
 | M2-06 | Add development request instrumentation for concurrency evidence. | M2-04 | `DONE` | Lead | Per-reference current/maximum/total metrics are observable and resettable without shopper coupling; focused/full tests, build, and warmed live overlap verification pass. |
-| M2-07 | Add route/contract integration tests and commit. | M2-01..M2-06 | `READY` | Lead | Every assessment condition is reachable through HTTP. |
+| M2-07 | Add route/contract integration tests and commit. | M2-01..M2-06 | `DONE` | Lead | A serial real-HTTP Playwright suite reaches every state and adverse condition, README commands match implemented controls, and full unit/browser/build/audit gates pass. |
 
 ### M2-01 evidence
 
@@ -546,6 +547,29 @@ Risks/assumptions: cold compilation can serialize/skew an initial manual probe,
 Next: M2-07
 ```
 
+### M2-07 evidence
+
+```text
+Task: M2-07
+Status: DONE
+Owner: Lead
+Files: tests/e2e/mock-api.spec.ts; Playwright and narrow Next dev-origin config;
+       verified README scenario instructions; quality, execution, and
+       discussion documentation
+Checks: pnpm check; pnpm test:e2e; pnpm build; pnpm audit --json;
+        git diff --check
+Results: 23 Vitest files and 253 tests passed; four Playwright tests passed;
+         production build contains all seven application/API routes; audit
+         found 0 info/low/moderate/high/critical advisories across 556 deps
+Requirements: PR-02; PR-03; PR-08; PR-09; PR-13; PR-14; PR-16; PR-17;
+              DR-09; M2-07 acceptance gate
+Risks/assumptions: Playwright uses next dev because scenario controls are
+                   intentionally unavailable in production; the disconnect
+                   test intentionally emits a server pipe-error log; host Node
+                   remains 24.16.0 versus the declared 24.18.0
+Next: M3-01, pending work authorization beyond M2
+```
+
 ### M2 safe parallelism
 
 After M1 contracts are frozen, `M2-01/M2-02` and `M2-03` can have separate
@@ -555,7 +579,7 @@ owners if they do not share files. Route integration remains lead-owned.
 
 | ID | Task | Depends on | Status | Owner | Acceptance gate / evidence |
 | --- | --- | --- | --- | --- | --- |
-| M3-01 | Add QueryClient provider, typed API client, and query keys. | M1-09, M2-07 | `BLOCKED` | Lead | Untrusted responses validate; remote state has one owner. |
+| M3-01 | Add QueryClient provider, typed API client, and query keys. | M1-09, M2-07 | `READY` | Unassigned | Untrusted responses validate; remote state has one owner. |
 | M3-02 | Build merchant/order summary and method-selection step. | M3-01 | `BLOCKED` | Unassigned | Locale-formatted fiat and every API-provided method are accessible. |
 | M3-03 | Implement quote mutation and stale-response protection. | M3-01, M3-02 | `BLOCKED` | Lead | Obsolete quote responses cannot replace current intent. |
 | M3-04 | Build fixed issued-method and guarded-change flow. | M3-03 | `BLOCKED` | Unassigned | Active instructions are not edited in place; warning and confirmation work. |
