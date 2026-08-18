@@ -42,11 +42,13 @@ Only the lead agent updates task status. At most one critical-path task may be
 
 ## Current milestone
 
-**Milestone M5 is implemented, verified, and committed locally.**
+**Milestone M6 is implemented, verified, and committed locally. M7 submission
+documentation and final review are in progress.**
 
 ### Next task
 
-`M6-01` — Implement the happy-path Playwright journey through paid.
+`M7-01` — Reconcile the design document and diagrams with the implemented
+system.
 
 Milestone M1 is committed and verified. Contracts, lifecycle presentation,
 exact money handling, deadline reconciliation, polling policy, and all supplied
@@ -1091,19 +1093,150 @@ Next: M5-05 commit strategy review
 
 | ID | Task | Depends on | Status | Owner | Acceptance gate / evidence |
 | --- | --- | --- | --- | --- | --- |
-| M6-01 | Happy-path Playwright journey through paid. | M5-05 | `READY` | Unassigned | Quote → awaiting → detected → confirming → paid; polling stops. |
-| M6-02 | Background-expiry and detection/expiry race journeys. | M5-05 | `BLOCKED` | Unassigned | Absolute time and reconciliation invariants pass. |
-| M6-03 | Underpayment recovery journey. | M5-05 | `BLOCKED` | Unassigned | Only outstanding amount instructed; same network/address; accepted polling behavior. |
-| M6-04 | Slow/failing transport recovery journeys. | M5-05 | `BLOCKED` | Unassigned | Last known state preserved; no overlap; recovery succeeds. |
-| M6-05 | Wrong-network and method-commitment journey. | M5-05 | `BLOCKED` | Unassigned | Guarded change only while awaiting; absent after detection; network remains explicit. |
-| M6-06 | Automated accessibility scan and keyboard/mobile walkthrough. | M5-05 | `BLOCKED` | Unassigned | No critical violations; manual findings fixed or documented. |
-| M6-07 | Commit critical verification slice. | M6-01..M6-06 | `BLOCKED` | Lead | Browser suite passes reliably; evidence summarized. |
+| M6-01 | Happy-path Playwright journey through paid. | M5-05 | `DONE` | Lead | Real UI journey covers quote/copy → awaiting → detected → confirming → paid; resetting metrics after paid and waiting 3.5s records zero new polls; all 9 parallel Chromium journeys pass. |
+| M6-02 | Background-expiry and detection/expiry race journeys. | M5-05 | `DONE` | Lead | Playwright changes absolute time without firing accumulated timers; focus immediately locks instructions, then authoritative expired renders requote while detected wins the zero-time race; all 11 browser journeys pass. |
+| M6-03 | Underpayment recovery journey. | M5-05 | `DONE` | Lead | Browser journey instructs only exact 43.69 USDT outstanding on the committed Tron method/address, preserves the QR payload, freezes expiry controls, continues with peak concurrency one, and reaches paid; all 12 browser journeys pass. |
+| M6-04 | Slow/failing transport recovery journeys. | M5-05 | `DONE` | Lead | Slow and exhausted-HTTP-retry journeys preserve the last confirmed state, record peak concurrency one, distinguish transport from lifecycle failure/expiry, and recover to confirming; all 13 browser journeys pass. |
+| M6-05 | Wrong-network and method-commitment journey. | M5-05 | `DONE` | Lead | Guarded change keeps the current quote by default, deactivates old instructions before reselection, issues a distinct consistent replacement quote, keeps wrong-network loss guidance explicit, and removes change controls after detection; all 14 browser journeys pass. |
+| M6-06 | Automated accessibility scan and keyboard/mobile walkthrough. | M5-05 | `DONE` | Lead | Axe scans selection, active instructions, and every non-awaiting outcome with zero violations after correcting a discovered heading-order defect; keyboard/mobile/focus/contrast checks pass; 368 tests, build, 22 browser journeys, and zero audit findings pass. |
+| M6-07 | Commit critical verification slice. | M6-01..M6-06 | `DONE` | Lead + candidate | Candidate approved the four-part boundary; critical lifecycle journeys are `a5e240d`, recovery/commitment journeys are `4cf96a0`, and accessibility verification/correction is `e662486`; this documentation commit closes the boundary. No push performed. |
+
+### M6-01 evidence
+
+```text
+Task: M6-01
+Status: DONE
+Owner: Lead
+Files: happy-path Playwright journey; execution tracker
+Checks: focused Chromium journey; pnpm test:e2e; git diff --check
+Results: exact awaiting instructions and address copy are exercised; UI then
+         renders detected, confirming/progress, and paid in order; after paid,
+         reset backend metrics stay at zero for a full 3.5-second interval;
+         all 9 Chromium journeys pass across 4 workers
+Requirements: complete shopper happy path; do-not-resend detection guidance;
+              confirmation progress; terminal paid stop
+Risks/assumptions: progression timing is assessment policy, not chain timing
+Next: M6-02
+```
+
+### M6-02 evidence
+
+```text
+Task: M6-02
+Status: DONE
+Owner: Lead
+Files: background-expiry/detection-race Playwright journeys; tracker
+Checks: 2 focused Chromium journeys; pnpm test:e2e; git diff --check
+Results: setSystemTime changes the absolute clock without running queued polls;
+         focus restoration immediately removes amount/address/QR/change actions;
+         a delayed status check then renders either authoritative expiry/requote
+         or detected zero-confirmation guidance; all 11 Chromium journeys pass
+Requirements: background time jump; immediate lock at zero; one reconciliation;
+              detected or later can never become locally expired
+Next: M6-03
+```
+
+### M6-03 evidence
+
+```text
+Task: M6-03
+Status: DONE
+Owner: Lead
+Files: underpayment Playwright journey; tracker; discussion record
+Checks: focused Chromium journey; pnpm test:e2e; git diff --check
+Results: the documented USDT/Tron fixture renders exactly 43.69 USDT due;
+         amount, network, address, and QR remain the issued instruction; expiry
+         and method-change controls stay absent; polling continues with peak
+         concurrency one and the same session can then reach paid; all 12
+         Chromium journeys pass across 4 workers
+Requirements: provisional non-terminal underpayment; outstanding amount only;
+              same network/address; frozen expiry; non-overlapping polling
+Risks/assumptions: underpaid remains provisional pending Triple-A confirmation
+Next: M6-04
+```
+
+### M6-04 evidence
+
+```text
+Task: M6-04
+Status: DONE
+Owner: Lead
+Files: adverse-transport Playwright journeys; tracker; discussion record
+Checks: 2 focused Chromium journeys; pnpm test:e2e; git diff --check
+Results: a five-second response records one in flight and peak one; persistent
+         HTTP 500 responses exhaust the retry policy without replacing the
+         detected state or showing failed/expired; explicit retry then recovers
+         to confirming; all 13 Chromium journeys pass across 4 workers
+Requirements: slow polling without overlap; last-known-state preservation;
+              transport/business-state separation; automatic/manual recovery
+Next: M6-05
+```
+
+### M6-05 evidence
+
+```text
+Task: M6-05
+Status: DONE
+Owner: Lead
+Files: method-commitment Playwright journey; tracker; discussion record
+Checks: focused Chromium journey; pnpm test:e2e; git diff --check
+Results: keep is the safe focused default; confirming a change removes old
+         amount/address/QR before selection; the replacement has a distinct
+         reference and internally consistent Ethereum instructions; detection
+         removes selectors/change while preserving explicit network identity;
+         all 14 Chromium journeys pass across 4 workers
+Requirements: guarded change while awaiting; wrong-network warning; atomic new
+              quote; fixed method after funds are detected
+Next: M6-06
+```
+
+### M6-06 evidence
+
+```text
+Task: M6-06
+Status: DONE
+Owner: Lead
+Files: exact axe Playwright dependency; lifecycle accessibility scans;
+       currency-heading correction/regression; tracker; discussion record
+Checks: focused selector test; 8 focused Axe journeys; pnpm check; pnpm build;
+        pnpm test:e2e; pnpm audit --json; git diff --check
+Results: the first scan found one moderate heading-order defect and no lifecycle
+         violations; currency groups now use level-two headings and every scan
+         returns zero violations; 41 Vitest files/368 tests, production build,
+         22 Chromium journeys on 4 workers, and all 560 audited dependencies
+         with 0 vulnerabilities pass
+Requirements: automated primary/outcome scans; keyboard-only issuance and focus
+              recovery; semantic status/labels; mobile fit and 44px targets;
+              reduced motion; normal/warning/success/error contrast
+Risks/assumptions: automated scanning supplements rather than replaces manual
+                   assistive-technology review; local Node 24.16.0 remains below
+                   the repository's required 24.18.0 floor
+Next: M6-07 commit strategy review
+```
+
+### M6-07 evidence
+
+```text
+Task: M6-07
+Status: DONE
+Owner: Lead + candidate
+Files: focused browser and accessibility commits; execution/discussion records
+Checks: candidate strategy review; git diff review; previously recorded full
+        M6 check/build/browser/audit gate
+Results: candidate approved four focused commits; a5e240d records happy path and
+         expiry races; 4cf96a0 records recovery/transport/method commitment;
+         e662486 records the accessibility matrix and heading correction; this
+         documentation commit records the verified boundary without squashing
+Requirements: coherent unsquashed history; truthful agent/candidate correction
+              record; reproducible M6 evidence
+Next: M7-01
+```
 
 ## Milestone M7 — Submission documentation and final review
 
 | ID | Task | Depends on | Status | Owner | Acceptance gate / evidence |
 | --- | --- | --- | --- | --- | --- |
-| M7-01 | Finalize design document and diagrams against implemented behavior. | M6-07 | `BLOCKED` | Lead + candidate | Covers every required design topic and one defended decision. |
+| M7-01 | Finalize design document and diagrams against implemented behavior. | M6-07 | `IN_PROGRESS` | Lead | Covers every required design topic and one defended decision. |
 | M7-02 | Finalize ADR statuses and observed consequences. | M6-07 | `BLOCKED` | Lead + candidate | ADRs reflect real trade-offs, not tool descriptions. |
 | M7-03 | Complete README run, scenario, dropped-work, and agent sections. | M6-07 | `BLOCKED` | Lead + candidate | Instructions reproduced from clean checkout; agent examples are factual. |
 | M7-04 | Recheck React/Next advisories and dependency audit. | M7-01..M7-03 | `BLOCKED` | Lead | Final versions/check date/findings recorded. |

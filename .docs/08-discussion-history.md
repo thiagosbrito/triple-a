@@ -1234,3 +1234,86 @@ payment-status resilience (`753b4c4`), the candidate-found cross-session fix
 (`97f2bb5`), evaluator tooling (`da0b512`), and browser evidence (`307568e`)
 before this documentation boundary. No commit was amended or squashed, and no
 push was performed as part of the local boundary.
+
+## 2026-08-18 - M6-01 browser happy path
+
+The browser suite now drives one multi-confirmation payment through the real
+shopper and evaluator surfaces. It verifies the exact awaiting instructions,
+address-copy confirmation, detected zero-confirmation/do-not-resend guidance,
+confirming progress, and the final paid state. After paid, the test resets
+backend status-request metrics, waits longer than an awaiting poll interval,
+and proves that no request starts. All nine Chromium journeys pass across four
+workers.
+
+## 2026-08-18 - M6-02 background expiry and detection race
+
+Playwright now changes the browser's absolute system time beyond `expires_at`
+without executing accumulated timers, then dispatches focus restoration. This
+models a suspended page resuming after the deadline rather than fast-running
+ordinary polling. The UI immediately removes all transfer and method-change
+actions and displays the reconciliation state. A deliberately delayed backend
+result then proves both branches: authoritative expiry exposes requote, while
+detected funds render zero-confirmation/do-not-resend guidance and never flash
+or fall back to expiry. All eleven Chromium journeys pass across four workers.
+
+## 2026-08-18 - M6-03 underpayment recovery journey
+
+The browser suite now exercises the provisional non-terminal `underpaid`
+interpretation against the documented USDT-on-Tron amounts. The shopper is
+instructed to send only the exact 43.69 USDT outstanding on Tron (TRC-20), while
+the original destination and exact QR payload remain visible and consistent.
+Quote-expiry and method-change controls remain unavailable, status polling
+continues with a measured peak concurrency of one, and the same payment can
+subsequently reach paid. This behavior remains explicitly provisional until
+Triple-A confirms the lifecycle semantics. All twelve Chromium journeys pass
+across four workers.
+
+## 2026-08-18 - M6-04 adverse transport recovery journeys
+
+Browser verification now covers both slow and failing status transport. A
+five-second response remains the only request in flight despite the normal
+polling cadence. Separately, persistent HTTP 500 responses exhaust the bounded
+retry policy while the last confirmed detected state and do-not-resend guidance
+remain visible. The connectivity notice explicitly rejects interpreting the
+failure as payment `failed` or `expired`; a shopper retry recovers the same
+reference to confirming. Instrumentation records peak concurrency one before
+and after recovery. All thirteen Chromium journeys pass across four workers.
+
+## 2026-08-18 - M6-05 payment-method commitment journey
+
+The browser suite now treats a currency/network change as a safety-critical
+transition rather than an editable form value. The confirmation defaults to
+keeping the current quote and warns shoppers who may already have sent funds.
+Only explicit confirmation removes the old amount, address, and QR before the
+catalog returns; selecting Ethereum then creates a distinct reference whose
+visible amount, network, address, and QR agree. The wrong-network loss warning
+remains explicit. Once the backend reports detected funds, selectors and the
+change action are absent while `USDT on Ethereum (ERC-20)` remains visible in
+the recognized payment state. All fourteen Chromium journeys pass across four
+workers.
+
+## 2026-08-18 - M6-06 automated accessibility correction
+
+The first Axe scan found a genuine semantic hierarchy defect on the payment
+method screen: each currency group used a level-three heading even though the
+page had no intervening level-two heading. The groups now use level-two
+headings, and a component regression preserves that relationship.
+
+The completed automated matrix scans method selection, active instructions,
+and detected, confirming, paid, underpaid, overpaid, expired, and failed
+outcomes. All return zero Axe violations. The pre-existing keyboard/mobile
+walkthrough continues to verify keyboard issuance, dialog focus and Escape
+recovery, semantic live states, copy feedback, 390px fit, QR/address sizing,
+44px targets, reduced motion, and measured normal/success/warning/error
+contrast. The final M6 gate passes 41 Vitest files/368 tests, the production
+build, 22 Chromium journeys across four workers, and a zero-finding audit of
+560 dependencies.
+
+## 2026-08-18 - M6 approved commit boundary
+
+The candidate accepted M6 as the start of the final M7 stretch and approved
+the previously proposed four-part boundary. The local history now records
+critical happy-path/expiry journeys (`a5e240d`), recovery/transport/payment-
+method commitment journeys (`4cf96a0`), and accessibility verification plus
+the scan-discovered heading correction (`e662486`) before this documentation
+boundary. No commit was amended or squashed, and no push was performed.
