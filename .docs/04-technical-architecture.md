@@ -1,7 +1,7 @@
 # Technical Architecture
 
-Status: M5 adverse-transport and evaluator-control implementation complete
-Scope: Architecture and implementation baseline
+Status: Implemented design; reconciled with the final M7 verification boundary
+Scope: Final design document for the submitted hosted checkout
 
 ## Goals
 
@@ -16,14 +16,14 @@ The architecture must make the following properties easy to verify and explain:
 - A new requirement can be added during the follow-up interview without
   restructuring the application.
 
-## Proposed technology choices
+## Implemented technology choices
 
-| Concern | Proposed choice | Reason |
+| Concern | Implemented choice | Reason |
 | --- | --- | --- |
 | Application framework | Next.js 16.3.1 App Router with strict TypeScript | Stable registry release verified on 2026-08-17, published after the July security release. It matches Triple-A's stack and avoids canary/preview dependencies. |
 | UI runtime | React and React DOM 19.2.8 | Stable registry releases verified on 2026-08-17 and newer than the patched baselines for the disclosed React Server Components vulnerabilities. |
 | Package manager | pnpm 11.22.0 | Fast, deterministic installs; efficient content-addressable storage; strict dependency boundaries. Pin through `packageManager` and commit `pnpm-lock.yaml`. |
-| Server runtime | Node.js 24.18.0 LTS | Current Node 24 LTS patch on 2026-08-17; exact development pin prevents environment drift. |
+| Server runtime | Node.js 24.19.0 LTS | Current Node 24 LTS release verified on 2026-08-18; includes the July 29 security fixes and supersedes the original 24.18.0 pin. |
 | Styling | Tailwind CSS | Requested preference; supports a small, consistent design system without a large component dependency. |
 | Remote state | TanStack Query 5.101.4 | Owns fetching, mutation state, cancellation, retries, cache identity, and status polling. |
 | Client global state | None initially | There is no demonstrated cross-route or cross-feature client state that justifies Redux. |
@@ -32,6 +32,7 @@ The architecture must make the following properties easy to verify and explain:
 | QR generation | `qrcode.react`, rendered locally as SVG | Maintained React 19-compatible renderer; avoids remote payment-data disclosure and keeps the encoded payload testable. |
 | Unit/integration testing | Vitest and React Testing Library | Fast deterministic tests for domain rules, hooks, and state presentations. |
 | Browser testing | Playwright | Verifies a small number of critical shopper journeys and background/resume behavior. |
+| Accessibility testing | `@axe-core/playwright` plus focused browser checks | Scans the primary flow and every materially different lifecycle outcome; supplements keyboard, mobile, contrast, reduced-motion, and semantic assertions. |
 | Mock API | Next.js route handlers backed by a deterministic development scenario store | Exercises the real HTTP boundary and keeps one run command. |
 
 ## Test runner and application bundler are separate
@@ -51,8 +52,8 @@ application runtime or production build target.
   tool support is incomplete. The interactive checkout remains primarily a
   client-component surface behind a small App Router composition boundary.
 
-MSW is not part of the initial tool set. Next.js route handlers already provide
-the required HTTP mock boundary, and Playwright will exercise it. Add another
+MSW is not part of the tool set. Next.js route handlers already provide the
+required HTTP mock boundary, and Playwright exercises it. Add another
 mock layer only if a concrete isolated component-test need outweighs the risk of
 maintaining duplicate transport behavior.
 
@@ -73,31 +74,50 @@ Currency/network selection can remain close to the selector and quote mutation.
 Development scenario settings belong to the mock-development surface and do
 not need production global state.
 
-Redux Toolkit should be added only if implementation reveals independently
-changing client state shared by distant components that cannot be expressed
-cleanly through composition or URL/local state. This is an architectural gate,
-not a ban on Redux.
+Redux Toolkit remains a review trigger rather than a submitted dependency. Add
+it only if a future feature introduces independently changing client state
+shared by distant components that cannot be expressed cleanly through
+composition or URL/local state.
 
-## System boundary
+## Component structure and data flow
 
 ```mermaid
-flowchart LR
-    Shopper["Shopper"] --> UI["Checkout UI"]
-    UI --> Hooks["Payment query and mutation hooks"]
-    Hooks --> Client["Typed API client"]
-    Client --> Routes["Next.js mock API route handlers"]
-    Routes --> Fixtures["Currency, quote, and lifecycle fixtures"]
-    Dev["Development scenario controls"] --> Routes
-    Hooks --> Cache["TanStack Query cache"]
-    Cache --> Presenter["Derived lifecycle presentation"]
-    Presenter --> UI
+flowchart TB
+    Shopper["Shopper"] --> Page["CheckoutPage composition"]
+    Page --> Selector["PaymentMethodSelector"]
+    Page --> Issued["IssuedPaymentFlow"]
+    Page --> Summary["OrderSummaryCard"]
+
+    Selector --> Create["useCreatePayment"]
+    Issued --> Deadline["useDeadlineReconciliation"]
+    Issued --> Requote["useRequotePayment"]
+    Deadline --> Presentation["Progress / outcome / connectivity components"]
+
+    Create --> Query["Reference-scoped TanStack Query cache"]
+    Deadline --> Query
+    Requote --> Query
+    Query --> Client["checkoutApi + Zod relationship validation"]
+    Client --> Routes["Next.js route handlers"]
+    Routes --> Simulator["Scenario store, simulator, fixtures, instrumentation"]
+
+    Evaluator["Development-only scenario dock"] --> DevClient["Typed developmentApi"]
+    DevClient --> Routes
 ```
 
-The production-facing UI must depend on the HTTP contract, not import fixtures
-or mock state directly. This prevents the mock implementation from leaking into
-the checkout domain.
+The App Router page supplies validated fixed checkout context and decides
+whether development tooling is available. `CheckoutPage` owns only ephemeral
+selection and dock visibility. TanStack Query owns every server-derived quote,
+status, retry, and mutation lifecycle. Components render already validated
+data; they do not build URLs, parse JSON, or import mock state.
 
-## Proposed module boundaries
+The mock and shopper surfaces meet only through HTTP. The development dock also
+uses a typed client and route handlers rather than importing or mutating the
+scenario store. Its mutation callbacks may commit validated HTTP responses to
+the appropriate TanStack Query key, but they never fabricate payment data.
+That preserves the same serialization, delay, validation, and transport
+behavior exercised by the shopper.
+
+## Implemented module boundaries
 
 ```text
 src/
@@ -108,55 +128,79 @@ src/
       payments/[reference]/route.ts
       payments/[reference]/requote/route.ts
       dev/scenario/route.ts
+      dev/requests/route.ts
+      dev/quote-expiry/route.ts
     page.tsx
     layout.tsx
     providers.tsx
 
   features/checkout/
     api/
-      contracts/
-        primitives.ts
-        payment-method.ts
-        currencies.ts
-        payments.ts
-        payment-status-values.ts
-        payment-status.ts
-        problem.ts
+      contracts/                 Zod HTTP schemas and inferred types
       checkout-api.ts
+      development-api.ts
       checkout-query-keys.ts
+      http-json.ts
+      validate-api-response.ts
+      validate-payment.ts
+      validate-payment-status.ts
+    config/
+      checkout-session.ts
     domain/
       payment-status.ts
       payment-presentation.ts
       money.ts
       quote-expiration.ts
+      payment-polling.ts
+      payment-status-retry.ts
+      polling-policy.ts
     hooks/
       use-currencies.ts
       use-create-payment.ts
-      use-payment-status.ts
-      use-requote.ts
+      use-deadline-reconciliation.ts
+      use-requote-payment.ts
       use-quote-countdown.ts
     components/
-      checkout-page.tsx
-      order-summary.tsx
-      payment-method-selector.tsx
-      network-safety-notice.tsx
-      payment-instructions.tsx
-      payment-status-panel.tsx
-      quote-countdown.tsx
-      address-copy.tsx
-      payment-qr.tsx
-      connectivity-notice.tsx
-      dev-scenario-panel.tsx
+      checkout/                  Page composition and order context
+        checkout-page.tsx
+        checkout-layout.tsx
+        checkout-payment-panel.tsx
+        order-summary.tsx
+      payment-method/            Catalog choice and issued-method commitment
+        payment-method-selector.tsx
+        payment-method-commitment.tsx
+      payment-instructions/      One quote's amount, QR, address, and deadline
+        payment-instructions.tsx
+        payment-qr.tsx
+        address-copy.tsx
+        quote-countdown.tsx
+        network-safety-notice.tsx
+      payment-status/            Polling integration and lifecycle outcomes
+        issued-payment-flow.tsx
+        authoritative-payment-status.tsx
+        quote-deadline-status.tsx
+        payment-progress-status.tsx
+        payment-outcome-status.tsx
+        payment-underpaid-status.tsx
+        payment-terminal-outcomes.tsx
+        payment-connectivity-notice.tsx
+      development/               Development-only evaluator controls
+        development-scenario-panel.tsx
+        development-scenario-form.tsx
+        development-scenario-form-model.ts
+        development-payment-state-fields.tsx
+        development-network-condition-fields.tsx
+        development-quote-expiry-control.tsx
+        development-request-diagnostics.tsx
+        development-tools-shell.tsx
 
   mocks/
-    fixtures/
+    fixtures/currencies.ts
+    quote-factory.ts
+    payment-reference-factory.ts
     scenario-store.ts
     payment-simulator.ts
-
-  shared/
-    api/
-    components/
-    config/
+    request-instrumentation.ts
 ```
 
 The entire application source lives under `src/`. Next.js route entry points
@@ -164,8 +208,8 @@ live under `src/app`, while domain and feature code lives beside `app` rather
 than inside route folders. This avoids mixing a root `app/` directory with a
 partially separate `src/` tree.
 
-The exact feature paths may change during implementation. The boundary is more
-important than the folder spelling:
+No `shared/` directory was created because no cross-feature abstraction was
+proven necessary. The implemented boundary rules are:
 
 - Transport schemas do not contain UI copy.
 - Domain functions do not import React.
@@ -192,15 +236,21 @@ contract; a production integration with independently evolving additive fields
 would require revisiting that compatibility policy. Open values and open object
 shapes are separate compatibility decisions.
 
+Component folders follow shopper responsibilities rather than technical file
+types. Tests stay beside the component boundary they exercise. The checkout
+folder composes the flow but does not absorb method, instruction, lifecycle, or
+development behavior; those responsibilities can therefore change without
+turning `checkout-page.tsx` into a second application layer.
+
 ## Framework security baseline
 
-The initial scaffold will pin the stable registry releases verified on
-2026-08-17:
+The submitted baseline pins the stable registry/runtime releases rechecked on
+2026-08-18:
 
 - `next` 16.3.1, published on 2026-08-13 after the July security release;
 - `react` 19.2.8;
 - `react-dom` 19.2.8;
-- Node.js 24.18.0 LTS;
+- Node.js 24.19.0 LTS, superseding 24.18.0 after the July 29 Node security release;
 - pnpm 11.22.0.
 
 This is a security decision, not a general policy of installing prereleases or
@@ -228,18 +278,22 @@ Dependency policy:
 7. Record the final installed versions, runtime requirement, advisory check
    date, and any accepted audit findings in the README and ADR-001.
 
-Security evidence reviewed on 2026-08-17:
+Security evidence reviewed on 2026-08-18:
 
-- Next.js July 2026 security release:
-  <https://nextjs.org/blog>
+- Next.js July 2026 security release and current Active LTS policy:
+  <https://nextjs.org/blog/july-2026-security-release> and
+  <https://nextjs.org/support-policy>
+- Next.js 16.3 stable announcement (released after the July patches):
+  <https://nextjs.org/blog/next-16-3>
 - React Server Components security advisory and follow-up fixes:
   <https://react.dev/blog/2025/12/03/critical-security-vulnerability-in-react-server-components>
-- Next.js installation and supported runtime guidance:
-  <https://nextjs.org/docs/app/getting-started/installation>
-- Node.js release status:
-  <https://nodejs.org/en/about/previous-releases>
+  and
+  <https://react.dev/blog/2025/12/11/denial-of-service-and-source-code-exposure-in-react-server-components>
+- Node.js July 29 security release and current Node 24 LTS archive:
+  <https://nodejs.org/en/blog/vulnerability/july-2026-security-releases> and
+  <https://nodejs.org/en/download/archive/v24>
 - npm registry stable tags and exact package metadata, queried through pnpm on
-  2026-08-17.
+  2026-08-18: Next.js 16.3.1 and React/React DOM 19.2.8 remain `latest`.
 
 ## Data ownership
 
@@ -284,8 +338,8 @@ cache identity.
 The App Router layout renders a client provider around `children`, leaving the
 HTML shell as a Server Component. Following the current TanStack App Router
 guidance, server renders receive a fresh `QueryClient`, while the browser keeps
-one client for the application session. Polling and retry defaults remain
-operation-specific work for M4/M5 rather than unsafe global defaults.
+one client for the application session. Polling and retry defaults are
+operation-specific rather than unsafe global defaults.
 
 ### `GET /api/currencies`
 
@@ -312,8 +366,8 @@ Responsibilities:
 - Return an internally consistent payment and quote.
 - Generate `expires_at` three minutes after request time so the checked-in
   fixture does not already appear expired and manual testing remains practical.
-  Later development controls may trigger expiry immediately without changing
-  the production countdown policy.
+  Development controls can set the authoritative status to `expired`, while
+  fake-clock browser tests exercise the real local-deadline path.
 
 Client policy:
 
@@ -355,7 +409,7 @@ Client policy:
 
 ## Runtime contract model
 
-Status updates should be modeled as a discriminated union. Conceptually:
+Status updates are modeled as a strict discriminated union:
 
 ```ts
 type PaymentStatusUpdate =
@@ -369,16 +423,50 @@ type PaymentStatusUpdate =
   | FailedUpdate;
 ```
 
-Each variant should require exactly the fields needed to present that state.
+Each variant requires exactly the fields needed to present that state.
 Unknown or structurally invalid payloads become protocol errors, not payment
 failures.
 
-M4 adds quote-aware semantic validation before a status update can enter the
-query cache or UI. Every status money field must fit the issued asset's
+`assertPaymentStatusMatchesQuote` applies quote-aware semantic validation before
+a status update can enter the query cache or UI. Every status money field must fit the issued asset's
 catalog-provided precision. Detected, confirming, and paid confirmation targets
 must match the issued quote. An underpayment's destination must remain the
 issued quote address before it can be shown, copied, or encoded into a QR.
 These checks also protect the immediate status refresh after a requote conflict.
+
+## Implemented lifecycle model
+
+```mermaid
+stateDiagram-v2
+    [*] --> awaiting_payment: quote created
+    awaiting_payment --> detected: funds observed, 0 confirmations
+    awaiting_payment --> deadline_reconciliation: local expires_at reached
+    awaiting_payment --> expired: server reports expired
+    deadline_reconciliation --> locally_expired: still awaiting
+    deadline_reconciliation --> detected: late race resolves to funds
+    deadline_reconciliation --> confirming: confirmations already present
+    deadline_reconciliation --> paid: settlement already complete
+    deadline_reconciliation --> unavailable: status cannot be verified
+    locally_expired --> awaiting_payment: requote replaces quote atomically
+    expired --> awaiting_payment: requote replaces quote atomically
+    detected --> confirming: confirmations advance
+    detected --> paid: settlement completes
+    detected --> underpaid: partial amount recognized
+    detected --> overpaid: excess amount recognized
+    detected --> failed: settlement rejected
+    confirming --> paid: required confirmations reached
+    confirming --> overpaid: excess settlement
+    confirming --> failed: settlement rejected
+    underpaid --> confirming: outstanding amount received
+    underpaid --> paid: outstanding amount settles
+```
+
+`deadline_reconciliation`, `locally_expired`, and `unavailable` are client
+presentation phases, not invented API statuses. Transport retry/failure is an
+orthogonal query condition and never enters this lifecycle union. `paid`,
+`overpaid`, `expired`, and `failed` stop polling. `underpaid` remains active
+because its contract supplies both the outstanding amount and destination for a
+same-reference top-up.
 
 ### Issued-quote monetary integrity
 
@@ -397,7 +485,7 @@ mutation success. A violation is a protocol error and produces no usable
 payment instructions. The UI never rounds or reconstructs the server's
 transfer strings.
 
-An exhaustive mapping function should transform this union into shopper-facing
+`getPaymentPresentation` exhaustively transforms this union into shopper-facing
 presentation data. A `never` exhaustiveness check makes a newly added status a
 compile-time implementation task.
 
@@ -416,38 +504,37 @@ status polling itself never overlaps. Implemented policy:
 5. Polling for a previous payment reference is cancelled before the new
    reference becomes active.
 
-M3 implements points 1-4 with one mutation intent id per selection, an
+`useCreatePayment` implements points 1-4 with one mutation intent id per selection, an
 `AbortController` for the superseded request, request/response pair validation,
 and an intent-id guard before the complete payment enters its
 reference-specific query cache. Tests deliberately make the old transport
 ignore cancellation and resolve after the new quote; the obsolete response is
-not cached and does not replace the visible quote. Point 5 becomes active when
-status polling is introduced in M4.
+not cached and does not replace the visible quote. Unmounting the old issued
+flow consumes the reference-scoped status query signal, so obsolete polling is
+cancelled before a replacement becomes active.
 
 ### Method-change safety
 
 After a quote is accepted, its currency and network are fixed quote properties.
 Do not keep them as freely editable controls beside the active address and QR.
 
-While status is `awaiting_payment`, expose a guarded method-change action. It
+While status is `awaiting_payment`, expose a direct method-change action. It
 must:
 
-- explain that changing is safe only if the shopper has not sent funds;
-- require explicit confirmation;
 - deactivate the current instructions before returning to selection;
+- avoid an intermediate confirmation dialog when the action is available;
 - request and commit a complete new quote atomically;
 - prevent an obsolete response from restoring the old instruction set.
 
 At `detected` or later, remove method changing entirely.
 
-M3 implements the pre-detection portion by replacing the selection controls
-with a fixed issued-method summary as soon as a quote succeeds. The guarded
-action puts "Keep current quote" first and focuses it by default, restores
-focus to the initiating control when cancelled, and removes the active quote
-from the rendered flow before returning to selection. The abandoned payment
-remains reference-addressable in the query cache; it cannot silently become
-the active instruction again. M4 will bind availability of this action to the
-authoritative polled status and remove it at `detected` or later.
+The checkout replaces selection controls
+with a fixed issued-method summary as soon as a quote succeeds. Activating
+"Change payment method" removes the active quote from the rendered flow and
+returns directly to selection. The abandoned payment remains
+reference-addressable in the query cache; it cannot silently become the active
+instruction again. `IssuedPaymentFlow` renders this action only in the active
+`awaiting_payment` phase and removes it at `detected` or later.
 
 Do not use address copy, QR rendering, or an assumed QR scan as a lifecycle
 signal. The supplied API exposes no such event. The first authoritative evidence
@@ -465,7 +552,7 @@ A low-frequency UI timer causes re-rendering only. On visibility change and
 focus, recompute immediately. Browser timer throttling therefore affects only
 how often the screen repaints, not the calculated deadline.
 
-M4 implements this with one self-scheduling timeout aligned to the next visible
+`useQuoteCountdown` implements this with one self-scheduling timeout aligned to the next visible
 second. Each repaint stores only a fresh `Date.now()` observation and derives
 remaining time from the absolute validated deadline. Focus and return to a
 visible document force the same calculation immediately. A changed
@@ -474,17 +561,20 @@ has `aria-live="off"`, so assistive technology is not asked to announce every
 tick.
 
 At the first zero observation, the issued flow immediately removes amount,
-address, QR, copy, and method-change actions before an effect runs. One disabled
-TanStack status query is explicitly refetched under a reference-specific status
-key. `awaiting_payment` permits local expiry; any returned authoritative status
-wins; a transport or protocol error produces an indeterminate connectivity
-state and never claims expiry. The attempt guard is scoped to the payment
-reference plus complete quote lifetime through the keyed issued-flow boundary.
+address, QR, copy, and method-change actions before an effect runs. The existing
+active TanStack status query is explicitly refetched under its reference-
+specific key; `cancelRefetch: false` joins an in-flight request instead of
+starting another. `awaiting_payment` permits local expiry; any returned
+authoritative status wins; a transport or protocol error produces an
+indeterminate connectivity state and never claims expiry. The attempt guard is
+scoped to the payment reference plus complete quote lifetime through the keyed
+issued-flow boundary.
 
 Device-clock skew cannot be fully solved from the supplied body contract. The
-technical design will evaluate whether to derive a server offset from the HTTP
-`Date` header. If that path is unreliable across the chosen runtime, the
-limitation will be documented rather than hidden behind false precision.
+implementation deliberately does not claim server-clock correction from an
+HTTP `Date` header because the contract does not guarantee a reliable timestamp
+or offset policy. Absolute-time recomputation solves background throttling, not
+a badly skewed shopper device; this remains a documented limitation.
 
 ## Polling model
 
@@ -497,8 +587,7 @@ Dynamic polling policy:
 - `confirming`: poll every 2 seconds. The quote does not carry average network
   confirmation time, so the client does not couple active polling to a possibly
   stale catalog entry.
-- `underpaid`: continue every 3 seconds under the accepted provisional
-  non-terminal interpretation.
+- `underpaid`: continue every 3 seconds for the same payment reference.
 - terminal statuses: return `false` from the interval policy.
 - transport failure: retry automatically at 1, 2, and 4 seconds, then preserve
   the last good data and require automatic recovery on a later interval or an
@@ -524,10 +613,30 @@ problems do not retry aggressively. The last validated business state remains
 visible throughout, automatic polling can recover later, and exhausted retries
 offer a manual status refresh without implying failure or expiry.
 
+## Shopper-facing failure handling
+
+| Condition | Preserved truth | Shopper presentation and safe action |
+| --- | --- | --- |
+| Currency catalog cannot load | No payment has started. | Accessible error with retry; no selector or invented methods. |
+| Quote creation fails | No instructions were issued. | Keep the chosen method context and allow a safe quote retry. |
+| Slow status response | Last validated payment state. | Keep that state visible; never infer that funds were not detected. |
+| Retryable status transport/server failure | Last validated payment state and reference. | Bounded automatic retries, explicit connectivity notice, then manual retry; never map to `failed` or `expired`. |
+| Malformed or unknown status response | Last validated payment state and reference. | Reject as a protocol error and say the update could not be verified. |
+| Local deadline reached | Instructions are no longer known safe, but payment status is not yet known. | Hide transfer actions and reconcile once before showing local expiry. |
+| Requote returns 409 | Previous instructions remain inactive; the payment may have changed. | Show the problem detail, refresh authoritative status, and ask the shopper to review it. |
+| `underpaid` | Partial funds are recognized. | Show only the exact outstanding amount on the same network/address and continue polling for the same payment reference. |
+| `overpaid` | Excess funds are recognized. | Tell the shopper not to send more and retain the reference; never promise a refund. |
+| `failed` | Settlement was rejected. | Preserve the reference and direct the shopper to support; never instruct another full payment. |
+
+Every state or failure treatment answers what happened, whether payment is
+recognized or still expected, and what the shopper should do next. Text,
+headings, actions, and live-region semantics carry meaning independently of
+color.
+
 ## Mock scenario design
 
-The evaluator needs direct control and tests need determinism. The mock should
-support two modes:
+The evaluator needs direct control and tests need determinism. The mock
+supports two modes:
 
 1. **Exact state:** pin the payment to one documented status.
 2. **Progression:** advance through an explicit sequence for the happy path.
@@ -547,6 +656,13 @@ Orthogonal transport controls:
 - persistent failure mode;
 - selectable HTTP 500 versus simulated network disconnect where feasible.
 
+An independent quote-deadline control moves the current quote's absolute
+`expires_at` value to 0–600 seconds from now without changing payment status.
+`POST /api/dev/quote-expiry` validates the request and returns the complete
+updated payment through the same HTTP contracts. The dock commits that
+validated response to the payment query so the shopper countdown updates from
+one coherent quote snapshot.
+
 The committed store defaults each newly created payment to an exact
 `awaiting_payment` state. Creation allocates a distinct process-local reference
 for every checkout, preventing another browser tab or test run from replacing
@@ -558,14 +674,17 @@ sequence are kept on the server process global to survive development hot reload
 and are intentionally not multi-instance or deployment-safe.
 
 Scenario controls must be visibly marked development-only and must exercise the
-same HTTP endpoints as normal behavior. They must not set React query data
-directly.
+typed development HTTP boundary. They may commit validated mutation responses
+to TanStack Query, but must not fabricate payment data or bypass HTTP by
+importing the mock store.
 
 `GET` and `PUT /api/dev/scenario` expose the validated configuration for the
 development panel and automated HTTP checks. They are available only when
 `NODE_ENV` is not `production`, use no-store responses, and require a registered
-payment reference. The status route models a network disconnect with an errored
-response stream; real Next.js verification produces an empty client reply and
+payment reference. `POST /api/dev/quote-expiry` follows the same production
+exclusion and reference-validation policy. The status route models a network
+disconnect with an errored response stream; real Next.js verification produces
+an empty client reply and
 an expected server-side pipe error rather than a lifecycle payload.
 
 Development status requests are instrumented per payment reference with the
@@ -581,7 +700,7 @@ focus when closed. A Playwright journey
 holds a real status response open beyond the normal polling interval and uses
 the HTTP metrics to prove a maximum of one in-flight request.
 
-## Accessibility requirements
+## Accessibility design and evidence
 
 - Semantic headings reflect the page and status hierarchy.
 - Status changes use a carefully chosen live region that does not announce each
@@ -595,6 +714,17 @@ the HTTP metrics to prove a maximum of one in-flight request.
 - Motion respects `prefers-reduced-motion`.
 - Small-screen touch targets meet a minimum comfortable size.
 
+The final browser matrix uses Axe on method selection, active instructions, and
+all seven non-awaiting outcomes. The first run exposed a real skipped heading
+level in the currency groups; the implementation and a component regression
+now enforce level-two group headings. The completed matrix reports zero Axe
+violations. Separate browser assertions cover keyboard-only quote issuance,
+direct method changing without an alert dialog, immediate removal of old
+instructions, copy announcements, a 390px viewport, address and QR fit, a
+desktop QR panel spanning the full transfer-instruction summary beside the
+exact amount and countdown, 44px controls, reduced motion, and measured contrast
+for normal, warning, success, and error treatments.
+
 ## Security and integrity considerations
 
 Although this is a mock checkout, the design should reflect payment-page risks:
@@ -607,7 +737,7 @@ Although this is a mock checkout, the design should reflect payment-page risks:
 - Prevent development controls from being presented as production functionality.
 - Do not infer the network from the address; use explicit quote metadata.
 
-M3 uses exact `qrcode.react` 4.2.0 to generate an inline SVG in the browser.
+The implementation uses exact `qrcode.react` 4.2.0 to generate an inline SVG in the browser.
 The payload is the validated `crypto_address` string and is the same value
 passed to the visible/copyable address component. The QR includes a four-module
 quiet zone and an accessible name containing the asset and explicit network.
@@ -617,7 +747,7 @@ asset-specific payment URI that the backend did not supply.
 
 ## Deliberate simplicity
 
-The proposal avoids:
+The implementation avoids:
 
 - A client-side state-machine library: eight server-owned statuses and a small
   set of derived modes do not yet justify one.
@@ -629,3 +759,39 @@ The proposal avoids:
 
 These choices keep the application explainable during the follow-up extension
 exercise.
+
+## Decision I would defend
+
+I would defend reconciling payment status once before declaring local expiry.
+The simpler alternatives are both unsafe: immediately showing expiry can erase
+a transfer the backend has just detected, while leaving instructions active
+until the next ordinary poll can invite payment against an expired quote.
+
+The implemented middle state removes the amount, address, QR, copy, and method-
+change actions at zero, then joins or starts one reference-scoped status check.
+An authoritative state proving funds arrived always wins. `awaiting_payment`
+allows local expiry, and a transport/protocol failure remains explicitly
+indeterminate. This costs one transitional presentation and a small amount of
+query coordination, but directly protects against duplicate payment and loss.
+Fake-time hook tests and browser tests with a suspended-clock jump verify both
+the expiry and detection sides of the race.
+
+## Known limitations and first follow-up changes
+
+- Absolute `expires_at` computation survives background throttling but cannot
+  correct a badly skewed device clock without a defined server-time contract.
+- The process-global mock store is deterministic for local assessment and tests,
+  not persistent or safe for multi-instance deployment.
+- The contract does not provide a chain-specific payment URI, authoritative
+  explorer mapping, or late-payment status. The UI therefore encodes only the
+  validated address, omits explorer links, and does not invent late-payment
+  behavior.
+- Simulated stream disconnection is deliberately development-only and may
+  produce a Next.js server-side pipe diagnostic; HTTP 500 remains available for
+  a clean persistent-failure demonstration.
+
+With more time and backend collaboration, the first change would be to define
+late-payment and production refund/tolerance policies in a versioned backend
+transition contract with contract tests shared by the frontend and Rust
+service. It would not be additional visual polish or a second client-state
+store.

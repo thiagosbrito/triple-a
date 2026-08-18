@@ -1,6 +1,6 @@
 # Quality and Verification Strategy
 
-Status: Foundation toolchain active; feature coverage pending
+Status: Release gate complete on 2026-08-18
 Scope: Verification architecture and implemented quality gates
 
 ## Principle
@@ -43,8 +43,9 @@ Validate every fixture against the same runtime schemas used by the client:
 - A stale quote response cannot overwrite a newer selection.
 - Copy action uses the exact visible address and announces success.
 - QR payload matches the visible quote.
-- Issued currency/network are fixed attributes; changing them uses a guarded
-  flow rather than mutating active instructions in place.
+- Issued currency/network are fixed attributes; the awaiting-state action
+  returns directly to selection rather than mutating active instructions in
+  place.
 - Address copy and QR display or scan assumptions do not change lifecycle state.
 - Countdown is calculated from `expires_at` rather than decremented state.
 - `detected` freezes expiration.
@@ -64,12 +65,13 @@ Keep the browser suite small and high-value:
 3. **Detection/expiry race:** reach zero while status refresh returns detected;
    verify expiry never replaces the in-flight payment.
 4. **Underpayment recovery:** show exact outstanding amount and preserve
-   network/address; continue to paid if the accepted semantics allow it.
+   network/address; continue polling through the accepted same-reference top-up
+   flow until the backend reports the next state.
 5. **Slow response:** verify only one status request is in flight.
 6. **Transient server failure:** retain last good state, communicate degraded
    connectivity, recover automatically, and do not show payment `failed`.
 7. **Wrong-network prevention:** verify the network is visible at each transfer
-   decision point, active instructions cannot be edited in place, guarded
+   decision point, active instructions cannot be edited in place, direct
    changing works only while awaiting, and changing is unavailable after
    detection.
 
@@ -79,8 +81,8 @@ Keep the browser suite small and high-value:
 
 - Shopper sees exact total due, asset, network, address, QR, and countdown.
 - Network warning is adjacent to the transfer instruction.
-- Issued currency/network are fixed. A guarded method-change action remains
-  available only after the shopper confirms that no funds were sent.
+- Issued currency/network are fixed. A direct method-change action remains
+  available only while the authoritative state is awaiting payment.
 - Polling is active.
 
 ### `detected`
@@ -109,7 +111,7 @@ Keep the browser suite small and high-value:
 - Received and outstanding amounts are not confused.
 - The instruction says to send only the outstanding amount.
 - Asset, network, and address remain explicit.
-- Polling behavior follows the accepted terminal-state decision.
+- Polling continues for the same payment reference.
 
 ### `overpaid`
 
@@ -117,7 +119,7 @@ Keep the browser suite small and high-value:
 - The shopper is told not to send more.
 - No automatic-refund promise appears.
 - Payment reference/support direction remains available.
-- Polling stops under the proposed classification.
+- Polling stops under the accepted classification.
 
 ### `expired`
 
@@ -132,7 +134,7 @@ Keep the browser suite small and high-value:
   possible.
 - The shopper is not instructed to repeat the full payment.
 - Payment reference and support direction remain visible.
-- Polling stops under the proposed classification.
+- Polling stops under the accepted classification.
 
 ## Decimal test cases
 
@@ -194,3 +196,20 @@ Mock-API Playwright integration runs against `next dev` because evaluator
 scenario endpoints are intentionally unavailable in a production runtime. The
 same delivery gate separately runs `next build`, so exercising development
 controls does not replace production compilation and framework type analysis.
+
+## Final release evidence
+
+The complete gate was rerun with the checksum-verified official macOS arm64
+Node 24.19.0 archive and pnpm 11.22.0:
+
+| Gate | Result |
+| --- | --- |
+| `pnpm check` | Formatting, ESLint, TypeScript, and 42 Vitest files / 374 tests passed. |
+| `pnpm build` | Next.js 16.3.1 production build completed with all application and API routes. |
+| `pnpm test:e2e` | 22 Chromium journeys passed across four workers. |
+| Accessibility | Method selection, active instructions, and all seven post-quote outcome presentations returned zero automated Axe violations; keyboard/mobile/reduced-motion assertions passed. |
+| `pnpm audit --json` | Zero known vulnerabilities across 560 dependencies. |
+
+Automated accessibility evidence is not a claim of full assistive-technology
+certification. A production release would still benefit from manual VoiceOver
+or NVDA testing with representative users.

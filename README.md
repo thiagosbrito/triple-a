@@ -4,10 +4,9 @@ A safety-focused hosted stablecoin checkout for the Triple-A Senior Fullstack
 Engineer take-home assessment. The implementation uses a Next.js frontend and
 colocated deterministic mock HTTP API.
 
-> Current status: checkout lifecycle, resilient polling, and development
-> evaluator controls are implemented, verified, and committed locally through
-> M5. Follow progress in the
-> [delivery task list](./.docs/09-task-list.md).
+> Current status: the checkout, final documentation, security review, and full
+> release gate are complete. Final review is tracked in
+> [M7 of the delivery task list](./.docs/09-task-list.md).
 
 ## Scenario
 
@@ -19,7 +18,7 @@ conditions.
 
 ## Prerequisites
 
-- Node.js 24.18.0 LTS, pinned in `.node-version`.
+- Node.js 24.19.0 LTS, pinned in `.node-version`.
 - pnpm 11.22.0, pinned in `package.json`.
 
 The repository uses exact direct dependency versions and commits
@@ -44,18 +43,18 @@ pnpm start
 
 ## Quality commands
 
-| Command             | Purpose                                                                                                         |
-| ------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `pnpm format`       | Apply Prettier formatting and Tailwind class ordering.                                                          |
-| `pnpm format:check` | Verify formatting without changing files.                                                                       |
-| `pnpm lint`         | Run the Next.js Core Web Vitals and TypeScript ESLint rules.                                                    |
-| `pnpm typecheck`    | Run strict TypeScript without emitting files.                                                                   |
-| `pnpm test`         | Run Vitest unit and component tests once.                                                                       |
-| `pnpm test:watch`   | Run Vitest interactively.                                                                                       |
-| `pnpm test:e2e`     | Run Playwright Chromium journeys. Locally it reuses an existing server; otherwise it builds and starts Next.js. |
-| `pnpm test:e2e:ui`  | Open Playwright's interactive test UI.                                                                          |
-| `pnpm check`        | Run formatting, lint, typecheck, and Vitest gates.                                                              |
-| `pnpm build`        | Create and type-check the production Next.js build.                                                             |
+| Command             | Purpose                                                                                                                    |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm format`       | Apply Prettier formatting and Tailwind class ordering.                                                                     |
+| `pnpm format:check` | Verify formatting without changing files.                                                                                  |
+| `pnpm lint`         | Run the Next.js Core Web Vitals and TypeScript ESLint rules.                                                               |
+| `pnpm typecheck`    | Run strict TypeScript without emitting files.                                                                              |
+| `pnpm test`         | Run Vitest unit and component tests once.                                                                                  |
+| `pnpm test:watch`   | Run Vitest interactively.                                                                                                  |
+| `pnpm test:e2e`     | Run Playwright Chromium journeys against `next dev`; locally it reuses a compatible server already listening on port 3000. |
+| `pnpm test:e2e:ui`  | Open Playwright's interactive test UI.                                                                                     |
+| `pnpm check`        | Run formatting, lint, typecheck, and Vitest gates.                                                                         |
+| `pnpm build`        | Create and type-check the production Next.js build.                                                                        |
 
 Install Playwright's pinned browser once when needed:
 
@@ -83,8 +82,10 @@ src/
   app/                 # routes, composition, and mock API handlers
   features/checkout/   # API client, domain, hooks, and UI
   mocks/               # deterministic fixtures and scenario simulator
-  shared/              # genuinely cross-feature utilities and components
 ```
+
+No generic `shared/` or `utils/` directory was added because the single feature
+did not produce a proven cross-feature abstraction.
 
 ## Design documentation
 
@@ -114,13 +115,15 @@ checkout on desktop and as a bottom sheet on small screens. Its sections can:
 - delay status responses from 0 to 30,000 milliseconds;
 - trigger the next request or every request as HTTP 500 or a simulated network
   disconnect;
+- move the current quote deadline to 0–600 seconds from now;
 - display and reset current/maximum in-flight status-request metrics.
 
-Choose the values and press **Apply scenario**. The current payment status is
-refreshed immediately, including after polling has stopped in a terminal state.
+Choose lifecycle and transport values and press **Apply scenario**. The current
+payment status is refreshed immediately, including after polling has stopped in
+a terminal state. Quote expiry has its own **Update quote deadline** action.
 Press Escape or use the labelled close button to return focus to the launcher.
-The controls are absent from the production experience and both development
-control endpoints return 404 when `NODE_ENV=production`.
+The controls are absent from the production experience and all development
+endpoints return 404 when `NODE_ENV=production`.
 
 The HTTP commands below are an advanced, scriptable alternative to the panel.
 
@@ -174,6 +177,11 @@ Transport behavior is orthogonal to the lifecycle scenario. Set
 { "mode": "persistent", "kind": "network_disconnect" }
 ```
 
+The stream-disconnect option intentionally breaks a development HTTP response
+and may produce a Next.js `failed to pipe response` diagnostic in the server
+terminal. This is expected simulator behavior, not a payment failure. Use the
+HTTP 500 option for the cleanest persistent-failure demonstration.
+
 For example, a five-second one-shot server failure uses the same PUT command
 with this configuration:
 
@@ -209,33 +217,86 @@ transfer.
 
 ## Prioritization and omissions
 
-No required checkout behavior has been intentionally dropped at the foundation
-stage. Lower-value optional work currently deferred in the task tracker includes
-decorative animation, blockchain explorer links without authoritative backend
-URLs, real wallet integration, and WebSocket/SSE transport. The final README
-will list every incomplete item with its impact and prioritization rationale.
+No required shopper flow, documented status, adverse transport control, or
+documentation deliverable was intentionally dropped. The following lower-value
+or unsupported work was deliberately excluded from the time-boxed assessment:
+
+| Omitted work                                                                               | Impact                                                         | Prioritization rationale                                                                                                        |
+| ------------------------------------------------------------------------------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Decorative animation and more visual polish                                                | The UI is intentionally restrained rather than brand-complete. | Safety, lifecycle races, accessibility, and failure recovery were higher-value scoring areas.                                   |
+| Blockchain explorer links                                                                  | Shoppers cannot jump directly to a transaction explorer.       | The API provides neither authoritative explorer URLs nor a safe network-to-explorer mapping; guessing would be unsafe.          |
+| Chain-specific amount-bearing QR URIs                                                      | The QR contains the exact validated destination address only.  | The contract defines no URI scheme; inventing one could create incompatible wallet behavior.                                    |
+| Server-clock correction beyond absolute `expires_at`                                       | A badly skewed shopper device can still skew the countdown.    | The body contract supplies no authoritative server timestamp or offset policy. Background-tab correctness is fully implemented. |
+| Real wallet integration, authentication, persistence, merchant dashboard, and Rust service | The demo is a hosted shopper page backed by an in-memory mock. | These are explicitly outside the frontend assessment scope.                                                                     |
+| WebSocket/SSE status transport                                                             | Status changes are not pushed in real time.                    | Polling is explicitly required and its overlap, cleanup, retry, and stop behavior are scored.                                   |
+| Full translation infrastructure                                                            | Shopper copy is English-only.                                  | Real internationalization is out of scope; fiat formatting still respects the browser locale.                                   |
+
+`underpaid` is implemented as a non-terminal, shopper-recoverable state because
+the supplied payload includes `amount_outstanding` and `crypto_address`. That
+contract shape selects a same-reference top-up: the shopper sends only the
+outstanding amount on the issued network/address and polling continues. It does
+not create a second quote or promise a production refund policy.
 
 ## Agent collaboration
 
-The committed [AGENTS.md](./AGENTS.md) is a living contract for ownership,
-parallel work, safety invariants, and truthful verification. The
-[discussion history](./.docs/08-discussion-history.md) records actual candidate
-decisions and agent corrections, including:
+Codex was used for design analysis, implementation, tests, documentation, and
+verification. The committed [AGENTS.md](./AGENTS.md) is the living contract that
+constrained its work: payment invariants, file ownership, verification, honest
+history, and candidate approval before commit boundaries. The complete factual
+record is in the [discussion history](./.docs/08-discussion-history.md).
 
-- rejecting a premature scaffold so technical design could be completed first;
-- replacing an ambiguous root `app/` plus partial `src/` layout with one
-  coherent `src/` tree after candidate review;
-- introducing an exact patched framework baseline after the candidate connected
-  current vulnerabilities to checkout safety;
-- distinguishing QR/address interaction from authoritative backend payment
-  detection when defining method commitment.
+Three agent proposals/outputs were rejected or materially corrected:
 
-The final submission account will use only real collaboration events and will
-not manufacture rejected outputs to satisfy a count.
+1. The first architecture placed root `app/` beside `src/features/`. The
+   candidate challenged the unclear ownership, and the design moved all
+   application code under one `src/` boundary.
+2. The first contract direction treated the example currencies and networks as
+   frontend enums. The candidate pointed out that a backend catalog expansion
+   would then require a frontend release. They became branded open identifiers
+   validated against the latest catalog; only behaviorally closed payment
+   statuses remain an enum.
+3. The first evaluator panel occupied the full page width below the checkout,
+   making the shopper flow impossible to inspect while changing scenarios. The
+   candidate rejected that ergonomics. It became a compact non-modal desktop
+   dock/mobile sheet with a visible launcher, keyboard shortcut, and focus
+   restoration.
+
+A material candidate-owned improvement came from manual expiry testing. The
+candidate reported that requote appeared broken and the UI blinked. Investigation
+showed that every mock checkout reused `AQH-100306-PMT`, so a parallel browser
+test could silently replace the candidate's server record. Unique process-local
+references and a two-session regression now isolate checkouts and allow four
+parallel Playwright workers.
+
+No incorrect lifecycle transition was knowingly committed. One potentially
+unsafe interpretation was resolved during design: address copy or QR display/
+scan cannot prove a blockchain transfer started because the supplied contract
+emits no such event. Issued method details are fixed, a direct action remains
+while the server says `awaiting_payment`, and only authoritative `detected` or
+later removes method changing completely.
+
+Other candidate review improved the security baseline, polling-diagnostic
+language, Dev tools discovery before quote creation, and the desktop layout.
+These are retained in history rather than rewritten as if the agent got them
+right initially.
 
 ## Security baseline
 
-Framework and runtime versions are exact and were checked against official
-release guidance before scaffolding. On 2026-08-18, `pnpm audit --json` reported
-zero advisories across 556 dependencies. This is a point-in-time result; the
-advisory and dependency audit will be repeated before submission.
+The final check on 2026-08-18 used official project advisories/support pages and
+current registry metadata:
+
+- Next.js 16.3.1 remains the stable registry release on the 16.x Active LTS
+  line. It was released after the official July 2026 security floor of 16.2.11.
+- React and React DOM 19.2.8 remain the stable registry releases and are newer
+  than the official 19.2.4 RSC DoS/source-exposure patched floor.
+- Node.js was raised from 24.18.0 to the current 24.19.0 LTS. The earlier pin
+  predated the July 29 Node security release, which fixed high-severity HTTP/2
+  issues in 24.18.1.
+- `pnpm audit --json` reports zero known vulnerabilities across 560
+  dependencies.
+
+Sources: [Next.js July security release](https://nextjs.org/blog/july-2026-security-release),
+[Next.js support policy](https://nextjs.org/support-policy),
+[React RSC follow-up advisory](https://react.dev/blog/2025/12/11/denial-of-service-and-source-code-exposure-in-react-server-components),
+[Node.js July security release](https://nodejs.org/en/blog/vulnerability/july-2026-security-releases),
+and [Node 24 release archive](https://nodejs.org/en/download/archive/v24).

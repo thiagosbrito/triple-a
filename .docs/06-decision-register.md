@@ -1,14 +1,20 @@
 # Architecture Decision Register
 
-Status: Foundation accepted; ADR extraction pending
-Scope: Pre-implementation design only
+Status: Final accepted set; implementation consequences reviewed 2026-08-18
+Scope: Submission decision summary
 
-This register identifies decisions important enough to become ADRs. The
-foundation was accepted on 2026-08-17. This is not yet the final ADR set:
-accepted decisions will be rewritten as individual ADRs and their consequences
-will be checked against the implementation.
+The foundation was accepted on 2026-08-17. The four consequential decisions
+below are extracted as individual accepted ADRs and were reviewed against the
+implemented checkout on 2026-08-18:
 
-## ADR-001: Next.js and colocated mock API
+| ADR | Status | Implementation result |
+| --- | --- | --- |
+| [ADR-0001](adrs/0001-nextjs-and-colocated-mock-api.md) | Accepted and verified | One Next.js application exercises real HTTP boundaries; the mock remains explicitly process-local/development-only. |
+| [ADR-0002](adrs/0002-tanstack-query-owns-remote-payment-state.md) | Accepted and verified | Query is the only remote-state owner; no Redux dependency or mirrored quote/status store exists. |
+| [ADR-0003](adrs/0003-reconcile-status-before-local-expiry.md) | Accepted and verified | Both authoritative expiry and detection-winning-the-race pass browser verification. |
+| [ADR-0004](adrs/0004-decimal-strings-and-arbitrary-precision.md) | Accepted and verified | Branded decimal strings and strict arbitrary-precision operations preserve six- and eighteen-decimal values. |
+
+## ADR-0001: Next.js and colocated mock API
 
 ### Context
 
@@ -42,7 +48,7 @@ release if one supersedes this baseline.
 - Makes slow responses, HTTP failures, validation, and problem responses
   explicit.
 
-### Consequences to accept
+### Accepted consequences
 
 - More framework surface than a one-page Vite app.
 - Exact versions and the lockfile become part of the security evidence and must
@@ -51,7 +57,7 @@ release if one supersedes this baseline.
   multiple server instances.
 - The design must ensure mock modules do not leak into shopper components.
 
-## ADR-002: TanStack Query owns remote payment state
+## ADR-0002: TanStack Query owns remote payment state
 
 ### Context
 
@@ -76,7 +82,7 @@ Toolkit unless a concrete, independent global client-state need emerges.
 Duplicating payment and quote data in Redux creates synchronization risk without
 adding a capability required by the brief.
 
-### Consequences to accept
+### Accepted consequences
 
 - Query configuration becomes important domain-adjacent behavior and must be
   tested.
@@ -85,7 +91,7 @@ adding a capability required by the brief.
 - The README/design document should explain why a familiar tool was deliberately
   omitted.
 
-## ADR-003: Reconcile status before declaring local expiry
+## ADR-0003: Reconcile status before declaring local expiry
 
 ### Context
 
@@ -109,13 +115,13 @@ It directly protects the brief's invariant that a payment already on its way
 must never expire under the shopper, without leaving instructions active after
 their known deadline.
 
-### Consequences to accept
+### Accepted consequences
 
 - Expiry presentation may be delayed by one request.
 - A failed reconciliation needs a truthful degraded-connectivity state.
 - The mock and tests must cover the race explicitly.
 
-## ADR-004: Decimal strings plus arbitrary-precision operations
+## ADR-0004: Decimal strings plus arbitrary-precision operations
 
 ### Context
 
@@ -138,7 +144,7 @@ Choose option 3.
 - Handles currency-specific scale without hand-written normalization logic.
 - Keeps exact values readable in fixtures and UI tests.
 
-### Consequences to accept
+### Accepted consequences
 
 - All money utilities must prevent accidental `Number` conversion.
 - The decimal dependency and formatting policy need explicit review.
@@ -162,24 +168,26 @@ Choose option 3.
   installs, efficient shared storage, and strict dependency boundaries are the
   stronger repository-level benefits.
 - Treat currency/network as fixed attributes after a quote is issued. Permit a
-  guarded replacement only while `awaiting_payment`; remove the action at
+  direct replacement action only while `awaiting_payment`; remove the action at
   `detected` or later. QR scanning and address copying are not authoritative
   payment events.
 - Treat `paid`, `overpaid`, `expired`, and `failed` as terminal.
 - Treat `underpaid` as non-terminal and continue polling for the outstanding
-  amount. This remains a provisional domain interpretation and must change if
-  an authoritative backend contract says the status is terminal.
-- Use Node.js 24.18.0 LTS and `big.js` in strict mode.
+  amount on the issued method and payment reference. The supplied
+  `amount_outstanding` and `crypto_address` fields make the top-up actionable;
+  this is another transfer, not another quote.
+- Use Node.js 24.19.0 LTS and `big.js` in strict mode. The final security review
+  superseded the original 24.18.0 pin after the July 29 Node security release.
 - Use `qrcode.react` to generate SVG QR codes locally from validated quote data.
 - Use Vitest and React Testing Library for pure domain/client-component tests,
   and Playwright against the real Next.js application for browser integration.
   Vitest's Vite-based transformer does not change the Next.js/Turbopack runtime.
-- Do not add MSW initially because the committed route handlers already provide
+- Do not add MSW because the committed route handlers already provide
   the mock HTTP boundary.
 
-## Approval checklist
+## Final acceptance checklist
 
-Before implementation, explicitly accept or amend:
+All foundation decisions remain accepted after implementation review:
 
 - [x] Next.js 16.3.1 and React/React DOM 19.2.8 security baseline, with a
       pre-submission advisory recheck.
@@ -188,8 +196,8 @@ Before implementation, explicitly accept or amend:
 - [x] No Redux Toolkit without a demonstrated need.
 - [x] One status reconciliation at local countdown zero.
 - [x] Decimal strings and arbitrary-precision arithmetic.
-- [x] Terminal-state classification, with `underpaid` explicitly provisional.
-- [x] Fixed issued payment method with guarded pre-detection replacement.
+- [x] Terminal-state classification, with `underpaid` explicitly non-terminal.
+- [x] Fixed issued payment method with direct awaiting-state replacement.
 - [x] pnpm 11.22.0 as the exact package-manager version.
-- [x] Node.js 24.18.0 LTS, `big.js`, local SVG QR generation, Vitest + Testing
+- [x] Node.js 24.19.0 LTS, `big.js`, local SVG QR generation, Vitest + Testing
       Library, and Playwright.

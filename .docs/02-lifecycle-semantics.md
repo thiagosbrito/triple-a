@@ -1,6 +1,6 @@
 # Payment Lifecycle Semantics
 
-Status: Implemented for M4; `underpaid` semantics remain provisional
+Status: Implemented and release-verified
 Scope: Payment lifecycle authority, transitions, polling, and shopper actions
 
 ## Authoritative state
@@ -22,23 +22,23 @@ happen close together.
 
 The brief provides eight statuses:
 
-| Status | Shopper meaning | Proposed action class | Proposed polling behavior | Quote expiration behavior |
+| Status | Shopper meaning | Implemented action class | Implemented polling behavior | Quote expiration behavior |
 | --- | --- | --- | --- | --- |
 | `awaiting_payment` | No transfer has been detected. | Shopper must send funds. | Continue. | Active. |
 | `detected` | Transfer detected with zero confirmations. | Wait; do not send again. | Continue. | Frozen/irrelevant. |
 | `confirming` | Transfer is accumulating confirmations. | Wait; do not send again. | Continue. | Frozen/irrelevant. |
 | `paid` | Required payment settled successfully. | No action. | Stop. | Irrelevant. |
-| `underpaid` | Some funds arrived, but less than required. | Send only the outstanding amount. | **Open question; proposed: continue.** | Frozen/irrelevant. |
-| `overpaid` | More than the requested amount settled. | Do not send more; retain reference/contact support. | Proposed: stop. | Irrelevant. |
+| `underpaid` | Some funds arrived, but less than required. | Send only the outstanding amount. | Continue. | Frozen/irrelevant. |
+| `overpaid` | More than the requested amount settled. | Do not send more; retain reference/contact support. | Stop. | Irrelevant. |
 | `expired` | The current quote can no longer be used. | Request a new quote. | Stop until requote. | Expired. |
-| `failed` | Settlement was rejected. | Do not retry blindly; contact support. | Proposed: stop. | Irrelevant. |
+| `failed` | Settlement was rejected. | Do not retry blindly; contact support. | Stop. | Irrelevant. |
 
 The brief says there are "six more states" after naming four, but its API
 fixtures document only four additional states, for eight total. The solution
 should implement the eight contractually defined states and record the mismatch
 as a brief ambiguity rather than inventing two states.
 
-## Proposed transition model
+## Implemented transition model
 
 ```mermaid
 stateDiagram-v2
@@ -77,7 +77,7 @@ detected but before the next poll returns. Immediately replacing the payment
 instructions with an expired screen could violate the explicit rule that a
 payment already on its way must never expire under the shopper.
 
-### Proposed policy
+### Implemented policy
 
 When the countdown reaches zero while the last authoritative state is
 `awaiting_payment`:
@@ -93,8 +93,8 @@ When the countdown reaches zero while the last authoritative state is
 7. If the refresh fails, show a connectivity warning and do not claim that the
    payment expired as an authoritative fact.
 
-This is a proposed design decision and a candidate for the design document's
-"one thing I would defend" section.
+This accepted design decision is the design document's "one thing I would
+defend" and is covered at hook and browser-race layers.
 
 ## Requote semantics
 
@@ -127,7 +127,7 @@ network, but leaving editable selectors beside active payment instructions can
 create a dangerous mismatch. A shopper may begin an external transfer before
 the backend detects it.
 
-Proposed interaction:
+Implemented interaction:
 
 1. The shopper chooses currency and network.
 2. Quote creation succeeds.
@@ -135,10 +135,10 @@ Proposed interaction:
    ordinary live selectors.
 4. While the authoritative status remains `awaiting_payment`, a secondary
    "Change payment method" action is available.
-5. That action warns that it is safe only if no funds have been sent and
-   requires explicit confirmation.
-6. On confirmation, the old instructions are hidden or deactivated before
-   method selection resumes and a new quote is requested.
+5. Activating it immediately hides the old instructions and returns to method
+   selection without an intermediate confirmation dialog.
+6. Choosing another method requests and commits a complete new quote rather
+   than mutating fields from the previous quote.
 7. At `detected` or any later state proving funds arrived, the change action is
    removed completely.
 
@@ -173,27 +173,27 @@ communicate degraded connectivity, and retry according to a bounded policy.
 7. Retry timing may back off after transport errors, but recovery must remain
    automatic while the payment is active.
 
-## Terminal-state proposal
+## Implemented terminal-state classification
 
-Proposed terminal statuses:
+Terminal statuses:
 
 - `paid`
 - `overpaid`
 - `expired`
 - `failed`
 
-Proposed non-terminal statuses:
+Non-terminal statuses:
 
 - `awaiting_payment`
 - `detected`
 - `confirming`
 - `underpaid`
 
-The classification of `underpaid` is the only material unresolved lifecycle
-decision. Its payload includes both `amount_outstanding` and `crypto_address`,
-which strongly implies that the shopper can correct it with another transfer.
-Continuing to poll is therefore the safest proposed behavior, but confirmation
-from Triple-A would remove ambiguity.
+`underpaid` is non-terminal in the supplied contract. Its payload includes both
+`amount_outstanding` and `crypto_address`, providing the exact next transfer
+instruction. The shopper sends only that amount to the issued destination on
+the same network; the client preserves the payment reference and continues
+polling. This is an additional blockchain transfer, not a replacement quote.
 
 ## Exhaustiveness
 

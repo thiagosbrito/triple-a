@@ -2,6 +2,7 @@
 
 Status: Accepted
 Date: 2026-08-17
+Implementation review: 2026-08-18
 
 ## Context
 
@@ -32,6 +33,18 @@ validate decimal strings. Money utilities are the only place that constructs
 
 ## Verification and review trigger
 
-Test zero, maximum supported scale, six- and eighteen-decimal boundaries,
-comparison, subtraction, trailing-zero policy, and rejection of exponent or
-number inputs where the contract disallows them.
+The implementation keeps money as branded decimal strings across every HTTP
+contract. Catalog-provided decimal metadata validates quote/status scale, so a
+new structurally valid backend currency does not require a frontend currency
+enum. `big.js` strict mode is confined to domain operations that prove totals or
+derive mock outstanding/excess amounts; authoritative server strings remain the
+display source and are never silently rounded.
+
+Tests cover six- and eighteen-decimal boundaries, smallest ETH units, trailing
+zero preservation, exact addition/subtraction, exponent rejection, over-scale
+payloads, and the documented `120.00`/`43.69` and `180.00`/`16.31` cases. A
+source audit finds no `Number`, `parseFloat`, or native money arithmetic in the
+production checkout paths.
+
+Revisit only if the production API changes representation (for example to
+integer minor units) or defines a different asset-scale contract.

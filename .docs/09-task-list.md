@@ -42,13 +42,12 @@ Only the lead agent updates task status. At most one critical-path task may be
 
 ## Current milestone
 
-**Milestone M6 is implemented, verified, and committed locally. M7 submission
-documentation and final review are in progress.**
+**Milestone M7 candidate-review refinements and the final release gate are
+complete. Final diff and commit approval remain.**
 
 ### Next task
 
-`M7-01` — Reconcile the design document and diagrams with the implemented
-system.
+Review and approve the proposed M7 commit boundaries.
 
 Milestone M1 is committed and verified. Contracts, lifecycle presentation,
 exact money handling, deadline reconciliation, polling policy, and all supplied
@@ -57,7 +56,8 @@ committed locally as `c4be2d9`, and M2-03 is committed locally as `00ab520`.
 M2-04 is committed locally as `511b969`, and M2-05 is committed locally as
 `afbcdc1`. M2-06 is committed locally as `0f85896`; M2-07 has passed the final
 unit, browser, build, audit, and documentation gates. The M3 typed query,
-selection, quote, and guarded method-change flow is now implemented.
+selection, quote, and direct awaiting-state method-change flow is now
+implemented.
 
 ## Milestone M0 — Design gates and repository foundation
 
@@ -1236,14 +1236,157 @@ Next: M7-01
 
 | ID | Task | Depends on | Status | Owner | Acceptance gate / evidence |
 | --- | --- | --- | --- | --- | --- |
-| M7-01 | Finalize design document and diagrams against implemented behavior. | M6-07 | `IN_PROGRESS` | Lead | Covers every required design topic and one defended decision. |
-| M7-02 | Finalize ADR statuses and observed consequences. | M6-07 | `BLOCKED` | Lead + candidate | ADRs reflect real trade-offs, not tool descriptions. |
-| M7-03 | Complete README run, scenario, dropped-work, and agent sections. | M6-07 | `BLOCKED` | Lead + candidate | Instructions reproduced from clean checkout; agent examples are factual. |
-| M7-04 | Recheck React/Next advisories and dependency audit. | M7-01..M7-03 | `BLOCKED` | Lead | Final versions/check date/findings recorded. |
-| M7-05 | Run complete build, typecheck, lint, unit/integration, browser, and accessibility verification. | M7-04 | `BLOCKED` | Lead | All pass or remaining limitation is explicit and accepted. |
-| M7-06 | Audit requirements traceability and omissions. | M7-05 | `BLOCKED` | Lead + candidate | Every critical requirement has UI, test, and documentation evidence. |
-| M7-07 | Review commit history and clean submission repository. | M7-06 | `BLOCKED` | Lead | No secrets/generated junk; history is unsquashed, coherent, and honest. |
-| M7-08 | Prepare presentation and live-extension walkthrough. | M7-07 | `BLOCKED` | Candidate | Candidate can explain invariants, trade-offs, and safely modify a likely extension point. |
+| M7-01 | Finalize design document and diagrams against implemented behavior. | M6-07 | `DONE` | Lead | Final implemented design includes accurate component/data-flow and lifecycle diagrams, countdown, money, failure handling, accessibility evidence, limitations, and the expiry-reconciliation decision to defend. |
+| M7-02 | Finalize ADR statuses and observed consequences. | M6-07 | `DONE` | Lead | Four accepted ADRs now include implementation evidence, observed costs, and concrete review triggers; the final register links them and removes extraction-pending language. |
+| M7-03 | Complete README run, scenario, dropped-work, and agent sections. | M6-07 | `DONE` | Lead + candidate | README matches actual boundaries and controls, lists deliberate omissions/impact, records three factual rejected agent outputs plus candidate improvements/lifecycle clarification, and a fresh local clone passes frozen install and typecheck after fixing a generated-type dependency. |
+| M7-04 | Recheck React/Next advisories and dependency audit. | M7-01..M7-03 | `DONE` | Lead | Official advisories/support and registry tags confirm Next 16.3.1, React/React DOM 19.2.8, and pnpm 11.22.0 remain current stable; Node was raised to 24.19.0 after the July 29 security release; audit is zero across 560 dependencies. |
+| M7-05 | Run complete build, typecheck, lint, unit/integration, browser, and accessibility verification. | M7-04 | `DONE` | Lead | Checksum-verified Node 24.19.0 gate passes formatting, lint, typecheck, 374 Vitest tests, production build, 22 Chromium journeys, accessibility matrix, and zero-finding audit after candidate refinements. |
+| M7-06 | Audit requirements traceability and omissions. | M7-05 | `DONE` | Lead + candidate | Every PR, MR, and DR row points to concrete UI/code, test, or documentation evidence; omissions and unsupported production semantics remain explicit. |
+| M7-07 | Review commit history, complete candidate refinements, and clean the submission repository. | M7-06 | `REVIEW` | Lead | Candidate refinements, exact-runtime regression, and repository-hygiene scans pass; focused M7 commit boundaries await candidate approval. |
+| M7-08 | Prepare presentation and live-extension walkthrough. | M7-07 | `REVIEW` | Candidate | Candidate-owned preparation remains outside the submission repository. |
+
+### M7-01 evidence
+
+```text
+Task: M7-01
+Status: DONE
+Owner: Lead
+Files: final technical architecture; execution tracker; discussion record
+Checks: source-tree/path comparison; requirement-topic audit; Prettier;
+        stale-planning-language search; git diff --check
+Results: proposal-era status, module names, and M3/M4 future tense were removed;
+         component/data flow and lifecycle diagrams now match the implementation;
+         all DR-01..DR-06 design topics are explicit, including shopper-facing
+         failure handling and the expiry-reconciliation decision to defend
+Requirements: final design document; state model; component/data flow;
+              background-safe countdown; decimal precision; failure behavior;
+              defended decision and honest limitations
+Next: M7-02
+```
+
+### M7-02 evidence
+
+```text
+Task: M7-02
+Status: DONE
+Owner: Lead
+Files: four accepted ADRs; final decision register; architecture correction;
+       tracker; discussion record
+Checks: implementation/source audit; ADR status and stale-language search;
+        Prettier; git diff --check
+Results: every ADR records observed consequences and a real review trigger;
+         the register links the final accepted set; the deadline design now
+         correctly says it refetches/joins the existing active query rather
+         than creating a separate disabled query
+Requirements: small consequential ADR set; context/options/decision/
+              consequences; implemented trade-offs rather than tool summaries
+Next: M7-03
+```
+
+### M7-03 evidence
+
+```text
+Task: M7-03
+Status: DONE
+Owner: Lead + candidate
+Files: final README; root-layout reproducibility fix; tracker; discussion record
+Checks: README/API/source comparison; fresh local clone; pnpm install
+        --frozen-lockfile; clean-clone pnpm typecheck; Prettier; git diff --check
+Results: install and exact dependency pins reproduce; clean typecheck initially
+         exposed reliance on generated global LayoutProps, which was replaced by
+         an explicit ReactNode prop and then passed without .next artifacts;
+         scenario instructions, omissions, and collaboration examples are real
+Requirements: DR-08..DR-11; clean run instructions; every state/slow/error;
+              prioritization; three rejected outputs; candidate improvement;
+              honest lifecycle clarification
+Risks/assumptions: local host Node 24.16.0 still warns below the then-enforced
+                   Node 24.18.0 requirement; M7-04 subsequently raised the
+                   final security floor to Node 24.19.0
+Next: M7-04
+```
+
+### M7-04 evidence
+
+```text
+Task: M7-04
+Status: DONE
+Owner: Lead
+Files: Node/runtime pins; AGENTS baseline; README/design/index/ADR security
+       evidence; tracker; discussion record
+Checks: official Next.js July release/support/16.3 pages; official React RSC
+        advisory; official Node July security release/archive; registry latest
+        tags for pnpm/Next/React/React DOM; pnpm audit --json; diff hygiene
+Results: pnpm 11.22.0, Next 16.3.1, React 19.2.8, and React DOM 19.2.8
+         remain latest stable; Node 24.18.0 was superseded because it predates
+         the July 29 fixes, so .node-version/engines now require current LTS
+         24.19.0; audit reports 0 vulnerabilities across 560 dependencies
+Requirements: final official advisory check; current stable patched releases;
+              exact pins; reviewed dependency audit; no blind forced upgrade
+Next: M7-05
+```
+
+### M7-05 evidence
+
+```text
+Task: M7-05
+Status: DONE
+Owner: Lead
+Runtime: checksum-verified official Node 24.19.0 macOS arm64 archive;
+         pnpm 11.22.0
+Checks: pnpm check; pnpm build; pnpm test:e2e; pnpm audit --json;
+        git diff --check
+Results: formatting, ESLint, TypeScript, 42 Vitest files/374 tests,
+         Next.js 16.3.1 production build, and 22 Chromium journeys pass;
+         lifecycle Axe matrix reports zero violations; audit reports zero
+         vulnerabilities across 560 dependencies; the browser gate used an
+         isolated working-tree copy and port so the candidate's Node 24.16.0
+         development server remained untouched
+Requirements: complete release gate under the declared final runtime
+Next: M7-06
+```
+
+### M7-06 evidence
+
+```text
+Task: M7-06
+Status: DONE
+Owner: Lead + candidate
+Files: requirement/scoring matrix; lifecycle and assumption registers;
+       quality strategy; executed implementation plan; final documentation index
+Checks: PR-01..PR-18, MR-01..MR-05, and DR-01..DR-12 evidence audit;
+        stale planning-language and source-path review
+Results: every required row now names concrete implementation, automated-test,
+         or final-document evidence; no required shopper flow is marked omitted;
+         late-payment and production refund semantics remain explicit contract
+         limitations rather than invented guarantees; the supplied underpaid
+         fields define the accepted same-reference top-up flow
+Requirements: scored requirement traceability; omission honesty; documentation
+              agrees with implemented behavior
+Next: M7-07
+```
+
+### M7-07 review evidence
+
+```text
+Task: M7-07
+Status: REVIEW
+Owner: Lead
+Checks: git log --oneline; git diff --check; tracked generated/credential-file
+        search; private-key/token signature search; ignored-artifact inspection
+Results: history is focused, real, unsquashed, and unamended; no tracked secret
+         signature or generated build/test artifact was found; .next,
+         node_modules, test-results, Playwright reports, environment files, and
+         TypeScript build output remain ignored
+Refinements: responsibility-based component folders; payment/development form
+             splits; enforced arrow-function convention; direct method change;
+             amount-adjacent QR; evaluator quote-deadline control
+Final checks: checksum-verified Node 24.19.0; pnpm check (42 files/374 tests);
+              production build; 22 isolated Chromium journeys; accessibility
+              matrix; zero-finding 560-dependency audit; git diff --check;
+              generated/credential/private-material scans
+Remaining: candidate approval of the focused M7 commit strategy
+Next: commit review
+```
 
 ## Deferred and optional work register
 

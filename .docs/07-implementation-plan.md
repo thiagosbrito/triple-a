@@ -1,10 +1,10 @@
 # Implementation Plan
 
-Status: Draft; implementation must not start before design approval
+Status: Executed; all implementation slices complete and submission review active
 
 ## Working method
 
-Each implementation slice should:
+Each implementation slice followed this method:
 
 1. Satisfy a named requirement or safety invariant.
 2. Add verification proportional to its risk.
@@ -31,7 +31,7 @@ Exit criteria:
   initial dependency audit is reviewed.
 - Agent instructions prohibit floats for money and duplicated remote state.
 
-Suggested commit:
+Planned commit shape:
 
 > chore: establish checkout project and engineering guardrails
 
@@ -52,7 +52,7 @@ Exit criteria:
 - Decimal boundary tests pass for six- and eighteen-decimal assets.
 - No React component or endpoint is needed to test the domain core.
 
-Suggested commit:
+Planned commit shape:
 
 > feat: define payment contracts and lifecycle domain
 
@@ -73,7 +73,7 @@ Exit criteria:
 - Invalid combinations and early requote return typed problem responses.
 - Request instrumentation can verify maximum polling concurrency.
 
-Suggested commit:
+Planned commit shape:
 
 > feat: add controllable stablecoin payment mock API
 
@@ -95,7 +95,7 @@ Exit criteria:
 - Visible address and QR payload always match.
 - Network is unmissable at every transfer decision point.
 
-Suggested commit:
+Planned commit shape:
 
 > feat: build network-safe payment instructions
 
@@ -115,7 +115,7 @@ Exit criteria:
 - Exactly one reconciliation occurs at zero.
 - Requote atomically replaces all quote data.
 
-Suggested commit:
+Planned commit shape:
 
 > feat: make quote expiration resilient to background tabs
 
@@ -135,7 +135,7 @@ Exit criteria:
 - Polling stops and cleans up correctly.
 - Every state answers what happened and what the shopper should do next.
 
-Suggested commit:
+Planned commit shape:
 
 > feat: handle the complete payment lifecycle
 
@@ -155,7 +155,7 @@ Exit criteria:
 - Slow polls never overlap.
 - Recovery is automatic while the payment remains active.
 
-Suggested commit:
+Planned commit shape:
 
 > fix: preserve payment safety during transport failures
 
@@ -173,7 +173,7 @@ Exit criteria:
 - README instructions match the actual controls.
 - Critical shopper journeys pass consistently.
 
-Suggested commit:
+Planned commit shape:
 
 > test: cover payment races and evaluator scenarios
 
@@ -201,8 +201,8 @@ Suggested commit:
 
 ## Time-budget policy
 
-The assessment is explicitly time-boxed. If the implementation must be cut,
-cut from the bottom of this list first:
+The assessment was explicitly time-boxed. The implementation used this order
+when deciding what to defer:
 
 1. Decorative animation and advanced visual polish.
 2. Non-critical browser-test duplication.

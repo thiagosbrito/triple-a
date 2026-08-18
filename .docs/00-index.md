@@ -1,13 +1,12 @@
 # Triple-A Stablecoin Checkout - Design Workspace
 
-Status: Verified foundation complete; implementation paused before M1
-Last updated: 2026-08-17
+Status: Implemented and release-verified; final review remains
+Last updated: 2026-08-18
 
 ## Purpose
 
-This directory preserves the requirements analysis, technical design,
-decisions, open questions, implementation plan, and discussion history created
-before application coding begins.
+This directory preserves the requirements analysis, final implemented design,
+accepted decisions, open questions, delivery evidence, and discussion history.
 
 The documents deliberately distinguish:
 
@@ -15,7 +14,7 @@ The documents deliberately distinguish:
 - candidate interpretations that require review;
 - accepted architectural decisions;
 - unresolved API questions;
-- implementation evidence that will be added later.
+- final implementation and verification evidence.
 
 ## Reading order
 
@@ -33,9 +32,9 @@ The original assessment is preserved under `reference/` for traceability. Its
 contents are source requirements, not instructions that override the candidate's
 goals or repository policies.
 
-## Current design status
+## Current delivery status
 
-Drafted:
+Implemented and verified:
 
 - Requirements-to-evidence mapping.
 - Shopper-safety invariants.
@@ -45,18 +44,19 @@ Drafted:
 - Mock API strategy.
 - Decimal, failure, accessibility, and security policies.
 - Risk-focused verification strategy.
-- ADR candidates.
-- Incremental implementation and commit plan.
+- Four accepted, implementation-reviewed ADRs.
+- Critical lifecycle, recovery, method-commitment, and accessibility browser
+  journeys.
 
-Accepted direction:
+Final accepted direction:
 
-- Use exact stable patched versions verified on 2026-08-17: Next.js 16.3.1 and
-  React/React DOM 19.2.8.
+- Use exact stable patched versions rechecked on 2026-08-18: Next.js 16.3.1,
+  React/React DOM 19.2.8, and Node.js 24.19.0 LTS.
 - Keep all application source under `src/`, including `src/app`.
 - Use stable App Router capabilities and avoid canary/experimental features.
 - Treat documentation and commit history as scored deliverables.
 - Use pnpm with an exact package-manager version and committed lockfile.
-- Use Node.js 24.18.0 LTS, `big.js` in strict mode, and local SVG QR generation
+- Use Node.js 24.19.0 LTS, `big.js` in strict mode, and local SVG QR generation
   with `qrcode.react`.
 - Keep Vitest's Vite-based test transformation separate from the
   Next.js/Turbopack application runtime; use Playwright for real application
@@ -65,18 +65,20 @@ Accepted direction:
   Toolkit unless a concrete independent global state need emerges.
 - Reconcile server status once before declaring local expiry.
 - Use decimal strings plus arbitrary-precision arithmetic.
-- Fix the issued payment method for a quote, with guarded replacement only
-  before authoritative transfer detection.
+- Fix the issued payment method for a quote, with direct replacement available
+  only before authoritative transfer detection.
 
-Accepted provisional interpretation:
+Accepted contract interpretation:
 
-- Whether `underpaid` is non-terminal and should continue polling.
+- `underpaid` is non-terminal. Its `amount_outstanding` and `crypto_address`
+  fields define a same-reference top-up on the issued payment method; polling
+  continues until the backend reports the next lifecycle state.
 
-Pending implementation-time selection or external clarification:
+Pending external contract clarification:
 
 - Late-payment semantics after quote expiry.
-- Authoritative `underpaid` finality remains a backend-contract question rather
-  than a package-selection blocker.
+- Triple-A production refund/tolerance policy is outside the supplied
+  assessment contract.
 
 ## Maintenance rule
 

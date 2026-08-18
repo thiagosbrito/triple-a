@@ -2,6 +2,7 @@
 
 Status: Accepted
 Date: 2026-08-17
+Implementation review: 2026-08-18
 
 ## Context
 
@@ -34,6 +35,19 @@ requirement.
 
 ## Verification and review trigger
 
-Audit the implementation for duplicated quote/status ownership. Revisit only
-when a real cross-feature client-state requirement cannot be handled safely by
-composition, URL state, or local state.
+The implementation has one reference-scoped query-key factory for created
+payments, status updates, requote, and development diagnostics. Draft method
+selection, copy feedback, and dock visibility remain local component state.
+Redux is absent from both source and dependencies, and no quote/status value is
+mirrored into another store.
+
+The observed cost is concentrated complexity in `useCreatePayment`,
+`useDeadlineReconciliation`, and `useRequotePayment`: cancellation, stale-intent
+guards, polling, retry, deadline reconciliation, and 409 refresh behavior must
+be tested as stateful query behavior. That cost was preferable to a second
+remote-state owner and is covered by focused hook tests plus the browser race
+and recovery journeys.
+
+Revisit only when a real cross-feature client-state requirement cannot be
+handled safely by composition, URL state, or local state—not merely because the
+state feels complex.

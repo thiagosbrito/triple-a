@@ -33,6 +33,7 @@ silently choosing an interpretation.
 
 - Next.js App Router and route handlers; all application code belongs under
   `src/`, including `src/app`.
+- Node.js 24.19.0 LTS and pnpm 11.22.0; both are pinned by repository metadata.
 - Exact stable dependency versions and committed `pnpm-lock.yaml`.
 - TanStack Query is the sole owner of remote quote/payment state.
 - Do not add Redux Toolkit unless an independent global client-state need is
@@ -52,8 +53,8 @@ silently choosing an interpretation.
 - A rendered amount, fee, asset, network, address, QR payload, and expiry must
   come from one validated quote snapshot.
 - Currency/network are fixed after quote issuance. While `awaiting_payment`, a
-  guarded replacement flow may create a complete new quote. Remove that action
-  at `detected` or later.
+  direct replacement action may return to selection and create a complete new
+  quote. Remove that action at `detected` or later.
 - QR display, scan, and address copy are not authoritative payment events.
 - Derive countdown time from `expires_at - now`; never maintain an authoritative
   decrementing counter.
@@ -63,8 +64,9 @@ silently choosing an interpretation.
   and must stop for terminal states.
 - Transport failure is not a payment lifecycle status. Preserve the last known
   valid state and offer truthful recovery.
-- Handle every documented status exhaustively. `underpaid` is provisionally
-  non-terminal; do not harden that interpretation without updating the docs.
+- Handle every documented status exhaustively. `underpaid` is non-terminal:
+  preserve the issued method, show only `amount_outstanding`, and continue
+  polling for the same payment reference.
 
 ## Module boundaries
 
@@ -76,6 +78,9 @@ silently choosing an interpretation.
   may not.
 - Keep lifecycle classification, money rules, expiration policy, query keys,
   and shared schemas centralized. Do not create competing implementations.
+- Use arrow-function expressions for ordinary functions, React components, and
+  callbacks. ESLint rejects traditional function declarations and expressions;
+  constructors and true object/class methods retain their required syntax.
 
 ## Contract and validation conventions
 
@@ -167,8 +172,8 @@ unresolved risks/assumptions, and any requested change outside the allowlist.
 - `pnpm typecheck` — run strict TypeScript checking without emitting files.
 - `pnpm format` / `pnpm format:check` — write or verify Prettier formatting.
 - `pnpm test` / `pnpm test:watch` — run Vitest once or in watch mode.
-- `pnpm test:e2e` — run Playwright against an existing server locally or a
-  production build started by Playwright when no server is available.
+- `pnpm test:e2e` — run Playwright against an existing compatible local server
+  or the `pnpm dev` server started by the Playwright configuration.
 - `pnpm check` — run formatting, lint, typecheck, and Vitest gates.
 - `pnpm build` — run the production Next.js build and framework type analysis.
 - `pnpm start` — serve an existing production build.

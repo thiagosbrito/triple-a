@@ -1317,3 +1317,182 @@ critical happy-path/expiry journeys (`a5e240d`), recovery/transport/payment-
 method commitment journeys (`4cf96a0`), and accessibility verification plus
 the scan-discovered heading correction (`e662486`) before this documentation
 boundary. No commit was amended or squashed, and no push was performed.
+
+## 2026-08-18 - M7-01 final implemented design
+
+The technical architecture was reconciled against the source tree rather than
+polishing the earlier proposal in place. Stale component/hook names and M3/M4
+future-tense descriptions were replaced with the implemented query, validation,
+deadline, requote, and evaluator boundaries. The document now contains an
+accurate component/data-flow diagram and explicitly separates the eight server
+statuses from client-only deadline and transport phases in its lifecycle
+diagram.
+
+The final design also consolidates exact-money policy, shopper-facing failure
+handling, accessibility evidence including the scan-discovered heading fix,
+known limitations, and the status-before-expiry decision the candidate can
+defend. It does not claim server-clock correction, production persistence,
+late-payment semantics, or a backend-defined payment URI that the contract does
+not provide.
+
+## 2026-08-18 - M7-02 implementation-reviewed ADRs
+
+The four accepted ADRs now distinguish predicted consequences from evidence
+observed during implementation. The colocated mock ADR records the parallel-
+session collision that required unique references and the process-local/store
+limitations. The Query ADR records both the absence of duplicated Redux state
+and the complexity concentrated in cancellation, deadline, retry, and requote
+hooks. The expiry ADR records both browser race branches, and the decimal ADR
+records catalog-driven precision plus the production-source audit.
+
+This review also corrected one design-document phrase: deadline reconciliation
+refetches the existing active reference-scoped status query with non-cancelling
+semantics; it does not create a separate disabled query. The final decision
+register links all four implementation-reviewed records and no longer describes
+ADR extraction as pending.
+
+## 2026-08-18 - M7-03 README and clean-checkout correction
+
+The final README now reflects the implemented source tree and Playwright server,
+documents every UI/HTTP scenario, explains the development stream-disconnect
+diagnostic, and lists omitted work with shopper impact and prioritization. Its
+agent account uses three real rejected/corrected outputs, the candidate-found
+cross-session collision, and the QR/detection lifecycle clarification rather
+than manufacturing examples.
+
+Fresh-clone verification found a hidden reproducibility defect: `pnpm typecheck`
+passed in the working repository only because a prior Next build had generated
+the global `LayoutProps` type under `.next`. `RootLayout` now declares its
+`ReactNode` child prop explicitly. A frozen install and typecheck then pass in a
+fresh local clone without generated Next artifacts. The first verification
+attempt also ran pnpm from the temporary parent rather than the cloned child and
+correctly found no manifest; the command was rerun from the documented
+repository root.
+
+## 2026-08-18 - M7-04 final security baseline recheck
+
+The final check used official Next.js, React, and Node security/release sources
+plus current registry distribution tags. Next.js 16.3.1 remains the stable
+release on the 16.x Active LTS line and postdates the July 16.2.11 security
+floor. React/React DOM 19.2.8 remain stable and exceed the React team's 19.2.4
+RSC patched floor. pnpm 11.22.0 also remains current.
+
+The review found that the original Node 24.18.0 pin was no longer sufficient:
+the July 29 Node security release fixed high-severity HTTP/2 issues in 24.18.1,
+and the current Node 24 LTS archive is 24.19.0. `.node-version`, package engines,
+the living `AGENTS.md` baseline, README, design, index, register, and ADR-0001
+now require 24.19.0. Historical records retain the earlier pin as a fact about
+their original verification. The repeated package audit reports zero known
+vulnerabilities across 560 dependencies.
+
+## 2026-08-18 - M7-05 exact-runtime release gate
+
+The official Node 24.19.0 macOS arm64 archive was downloaded and its SHA-256
+checksum matched the published `SHASUMS256.txt` entry before use. With that
+runtime and pnpm 11.22.0, the final gate passed formatting, ESLint, TypeScript,
+41 Vitest files/368 tests, the Next.js 16.3.1 production build, and 22 Chromium
+journeys across four workers. The lifecycle accessibility matrix remained at
+zero Axe violations, and the audit remained at zero known vulnerabilities
+across 560 dependencies.
+
+## 2026-08-18 - M7-06 requirement traceability reconciliation
+
+The planning-era requirements, lifecycle, assumptions, quality, and
+implementation-plan documents were reviewed against the final source and test
+suite. PR-01 through PR-18, MR-01 through MR-05, and DR-01 through DR-12 now
+point to concrete evidence. The review did not silently promote assumptions:
+`underpaid` finality and late-payment semantics remain contract questions, and
+the accessibility record distinguishes automated evidence from manual
+assistive-technology certification.
+
+## 2026-08-18 - M7-07 repository hygiene review
+
+The tracked history remains real, focused, unsquashed, and unamended. Searches
+found no tracked environment/credential file, private-key or common token
+signature, or generated Next.js, dependency, Playwright, coverage, or
+TypeScript-build artifact. Local `.next`, `node_modules`, `test-results`, and
+type-generation output are correctly ignored. M7 changes remain uncommitted
+until the candidate reviews the proposed commit boundaries.
+
+## 2026-08-18 - Candidate accepts underpayment top-up semantics
+
+The candidate concluded that `amount_outstanding` together with
+`crypto_address` is sufficient contract evidence to treat `underpaid` as
+non-terminal rather than provisional. The accepted shopper flow preserves the
+issued currency, network, destination, and payment reference; shows only the
+outstanding amount; freezes quote expiry; and continues polling. Completing the
+balance requires another blockchain transfer and may incur another wallet or
+network fee, but it does not create another quote.
+
+External processor review showed that same-invoice aggregation is common but
+not universal: some providers allow a top-up or tolerance, while others refund
+the partial amount and require a new invoice. The take-home contract therefore
+drives this implementation; Triple-A's production refund/tolerance policy is
+not inferred from it. Historical entries retain the earlier provisional label
+to preserve the real decision timeline.
+
+## 2026-08-18 - Candidate requests responsibility-based component folders
+
+The candidate rejected the flat checkout component directory because unrelated
+composition, transfer-instruction, lifecycle, and evaluator files were becoming
+difficult to navigate. Components and their tests are now grouped under
+`checkout`, `payment-method`, `payment-instructions`, `payment-status`, and
+`development`. Large composition and lifecycle surfaces were also split along
+those boundaries; the HTTP, domain, hook, and mock ownership rules did not
+change.
+
+The move exposed six malformed nested replacements from an earlier mechanical
+arrow-function conversion. Those files were repaired explicitly rather than
+rerunning the transformation. Formatting, strict TypeScript, 53 focused
+component/page tests, and ESLint pass after the repair. The full release gate
+will be repeated after the remaining candidate-review refinements.
+
+## 2026-08-18 - Candidate refines QR placement beside the exact amount
+
+The candidate marked the full right side of the transfer summary as the intended
+QR area. The transfer label, heading, exact amount, network copy, and countdown
+now form the left column; the QR panel starts at the same top edge and stretches
+through the countdown's bottom edge in the right column. On small screens it
+continues to stack without horizontal overflow. Focused instruction tests and a
+real Chromium regression cover the mobile fit and desktop alignment.
+
+## 2026-08-18 - Candidate removes redundant method-change confirmation
+
+The candidate rejected the awaiting-payment confirmation dialog as unnecessary
+friction: the method-change action is already gated by the authoritative
+lifecycle phase. The accepted interaction now returns directly to selection
+when "Change payment method" is activated while `awaiting_payment`. The old
+instructions are removed before another method can be chosen, and the next
+selection still creates and commits a complete quote atomically.
+
+The post-detection protection is unchanged: `detected` and every later phase
+remove method changing completely. Tests now assert the single-action return to
+selection, absence of an alert dialog, complete replacement quote, and the
+locked state after detection. Earlier discussion entries retain the original
+confirmation design as factual history before this candidate correction.
+
+## 2026-08-18 - Final candidate-refinement release gate
+
+The remaining oversized production surfaces were split without changing their
+contracts. `IssuedPaymentFlow` is now an 87-line orchestrator over authoritative
+status and deadline/requote components. `DevelopmentScenarioForm` is a 90-line
+orchestrator over payment-state and network-condition fields with one
+schema-backed form model. Ordinary functions, components, and callbacks now use
+an ESLint-enforced arrow-function convention.
+
+The first lint selector was rejected because it incorrectly classified class
+constructors and genuine object methods as ordinary function expressions. The
+policy was narrowed to `func-style` plus `prefer-arrow-callback`, matching the
+accepted convention without changing method semantics. The restarted exact-
+runtime gate then passed formatting, ESLint, TypeScript, 42 Vitest files with
+374 tests, the Next.js production build, 22 Chromium journeys, the full Axe
+matrix, and an audit of 560 dependencies with zero findings.
+
+The candidate's VS Code development server was left running on port 3000 under
+Node 24.16.0. Because Next.js 16 prevents two development servers from sharing
+one project directory, the browser gate used a temporary copy of the exact
+working tree, a frozen offline store-backed install, port 3107, and the
+checksum-verified Node 24.19.0 binary. This preserved the candidate's session
+while keeping the final runtime claim accurate. Repository scans found no
+tracked generated artifacts, credential signatures, or references to private
+presentation material.

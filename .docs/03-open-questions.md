@@ -1,38 +1,30 @@
 # Open Questions and Assumption Register
 
-Status: Draft for review
-Scope: Pre-implementation analysis only
+Status: Final assumption register
+Scope: Unresolved API semantics, accepted candidate decisions, and limitations
 
-## Questions worth sending to Triple-A
+## Resolved from the supplied contract
 
-These questions materially affect shopper behavior and cannot be answered from
+### R1. `underpaid` is non-terminal
+
+The payload supplies `amount_outstanding` and `crypto_address`. Together they
+define an actionable same-reference top-up rather than a terminal outcome or a
+new quote. The shopper sends only the outstanding amount on the issued
+currency/network/address; the page freezes quote expiry and continues polling.
+The additional transfer may incur another wallet/network fee.
+
+### R2. Terminal polling classification
+
+`paid`, `overpaid`, `expired`, and `failed` are terminal. `awaiting_payment`,
+`detected`, `confirming`, and `underpaid` remain active. Unknown values remain
+protocol errors rather than inheriting either class.
+
+## Question worth sending to Triple-A
+
+This behavior materially affects shopper recovery and cannot be answered from
 the supplied API contract with certainty.
 
-### Q1. Is `underpaid` non-terminal?
-
-The payload supplies `amount_outstanding` and `crypto_address`, suggesting the
-shopper should send the missing amount and the page should continue polling.
-
-Proposed question:
-
-> For an `underpaid` payment, should the shopper send `amount_outstanding` to
-> the supplied address while the page continues polling, or should we treat
-> `underpaid` as terminal and direct the shopper to support?
-
-Default if unanswered: treat it as shopper-recoverable and continue polling.
-
-### Q2. Which statuses are terminal for polling?
-
-The brief says to stop on terminal states but does not enumerate them.
-
-Proposed question:
-
-> Can you confirm whether `paid`, `overpaid`, `expired`, and `failed` are the
-> terminal states, with `underpaid` remaining active?
-
-Default if unanswered: use that classification and document it.
-
-### Q3. How should late payments be represented?
+### Q1. How should late payments be represented?
 
 The narrative mentions that money can arrive late, but no dedicated late state
 or transition is provided.
@@ -46,43 +38,43 @@ Proposed question:
 Default if unanswered: do not invent a status; exercise `expired` independently
 and document the missing production rule.
 
-## Questions we can resolve through documented design judgment
+## Accepted candidate decisions
 
 These do not need recruiter input unless Triple-A wants to prescribe behavior.
 
 ### D1. What happens at local countdown zero?
 
-Proposed decision: perform one immediate status reconciliation before showing
+Accepted decision: perform one immediate status reconciliation before showing
 authoritative expiry. This protects an in-flight payment from a poll/countdown
 race.
 
 ### D2. Can the shopper change currency/network after detection?
 
-Proposed decision: no. Lock the selection after `detected` or any state proving
+Accepted decision: no. Lock the selection after `detected` or any state proving
 funds arrived.
 
 ### D3. What should the overpaid page promise?
 
-Proposed decision: acknowledge the received and excess amounts, tell the
+Accepted decision: acknowledge the received and excess amounts, tell the
 shopper not to send more, retain the reference, and suggest support. Do not
 promise an automatic refund.
 
 ### D4. How should polling errors appear?
 
-Proposed decision: preserve the last known payment state, add a non-destructive
+Accepted decision: preserve the last known payment state, add a non-destructive
 connectivity warning, retry automatically, and offer a manual retry. Never map a
 transport error to payment `failed`.
 
 ### D5. Should Redux Toolkit own payment status?
 
-Proposed decision: no. Remote payment/quote data should have one owner in
+Accepted decision: no. Remote payment/quote data has one owner in
 TanStack Query. Redux Toolkit should be omitted unless a concrete cross-cutting
 client-state requirement emerges; including it without such a requirement
 would add a second state model and weaken the design.
 
 ## Known contract limitations
 
-| Limitation | Consequence | Proposed treatment |
+| Limitation | Consequence | Implemented treatment |
 | --- | --- | --- |
 | No pre-quote endpoint supplies the merchant name, order reference, or fiat amount required by the initial summary. | The selector page needs trusted checkout context before `POST /api/payments` can return the same fields. | Treat the assessment's fixed merchant/order as validated hosted-page session input and reuse that input in the mock payment response so the summary cannot drift. |
 | No server timestamp is included in a response body. | `expires_at - Date.now()` survives tab throttling but cannot fully correct a badly skewed device clock. | Document the limitation; optionally use the HTTP `Date` header if the mock and runtime expose it reliably. |
@@ -96,12 +88,12 @@ would add a second state model and weaken the design.
 
 ## Assumption approval states
 
-Each assumption should use one of these labels in later documents:
+The final documents use these labels to distinguish evidence from judgment:
 
 - **Confirmed by brief**
 - **Confirmed by Triple-A**
 - **Candidate decision**
-- **Accepted design decision**
+- **Accepted design decision** (the implemented D1-D5 policies above)
 - **Deferred/unsupported by contract**
 
 This avoids presenting a reasonable inference as though it were an API fact.
