@@ -66,7 +66,7 @@ export function PaymentMethodSelector({
                   <label
                     key={network.id}
                     htmlFor={inputId}
-                    className="relative flex min-h-32 cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-slate-400 has-checked:border-slate-950 has-checked:ring-1 has-checked:ring-slate-950 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-slate-950 has-disabled:cursor-not-allowed has-disabled:opacity-60"
+                    className="relative flex min-h-32 cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-slate-400 has-checked:border-slate-950 has-checked:ring-1 has-checked:ring-slate-950 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-slate-950 has-disabled:cursor-not-allowed has-disabled:opacity-60 motion-reduce:transition-none"
                   >
                     <input
                       id={inputId}

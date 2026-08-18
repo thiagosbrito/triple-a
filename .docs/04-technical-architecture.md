@@ -373,6 +373,23 @@ Each variant should require exactly the fields needed to present that state.
 Unknown or structurally invalid payloads become protocol errors, not payment
 failures.
 
+### Issued-quote monetary integrity
+
+The currency catalog remains the runtime source of asset precision. When a
+shopper selects a method, quote creation captures that catalog precision with
+the request intent. Before a successful quote can enter the query cache or UI:
+
+- `crypto_amount`, `network_fee`, and `total_due` must each fit that asset's
+  API-provided decimal scale;
+- exact decimal arithmetic must prove that `total_due` equals
+  `crypto_amount + network_fee`; and
+- the original validated decimal strings remain authoritative for display.
+
+This semantic validation happens after structural HTTP parsing and before
+mutation success. A violation is a protocol error and produces no usable
+payment instructions. The UI never rounds or reconstructs the server's
+transfer strings.
+
 An exhaustive mapping function should transform this union into shopper-facing
 presentation data. A `never` exhaustiveness check makes a newly added status a
 compile-time implementation task.
@@ -415,6 +432,15 @@ must:
 - prevent an obsolete response from restoring the old instruction set.
 
 At `detected` or later, remove method changing entirely.
+
+M3 implements the pre-detection portion by replacing the selection controls
+with a fixed issued-method summary as soon as a quote succeeds. The guarded
+action puts "Keep current quote" first and focuses it by default, restores
+focus to the initiating control when cancelled, and removes the active quote
+from the rendered flow before returning to selection. The abandoned payment
+remains reference-addressable in the query cache; it cannot silently become
+the active instruction again. M4 will bind availability of this action to the
+authoritative polled status and remove it at `detected` or later.
 
 Do not use address copy, QR rendering, or an assumed QR scan as a lifecycle
 signal. The supplied API exposes no such event. The first authoritative evidence
@@ -534,6 +560,14 @@ Although this is a mock checkout, the design should reflect payment-page risks:
 - Validate route parameters and request bodies.
 - Prevent development controls from being presented as production functionality.
 - Do not infer the network from the address; use explicit quote metadata.
+
+M3 uses exact `qrcode.react` 4.2.0 to generate an inline SVG in the browser.
+The payload is the validated `crypto_address` string and is the same value
+passed to the visible/copyable address component. The QR includes a four-module
+quiet zone and an accessible name containing the asset and explicit network.
+It embeds no logo or remote image and initiates no external request. Per the
+assessment contract and candidate discussion, it does not invent an
+asset-specific payment URI that the backend did not supply.
 
 ## Deliberate simplicity
 

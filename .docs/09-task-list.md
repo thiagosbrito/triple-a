@@ -42,13 +42,12 @@ Only the lead agent updates task status. At most one critical-path task may be
 
 ## Current milestone
 
-**Milestone M3 active — safe quote experience.**
+**Milestone M3 complete — countdown and lifecycle work is next.**
 
 ### Next task
 
-`M3-04` — Build the fixed issued-method and guarded-change flow. M3-03 passed
-its acceptance gate on 2026-08-18. Figma remains a visual reference for M3-08;
-its MCP read tools are not yet exposed in the current VS Code session.
+`M4-01` — Implement the absolute countdown and focus/visibility recomputation.
+Its dependency is complete and the task is ready for the next work session.
 
 Milestone M1 is committed and verified. Contracts, lifecycle presentation,
 exact money handling, deadline reconciliation, polling policy, and all supplied
@@ -56,8 +55,8 @@ PDF fixtures are covered. M2-01 is committed locally as `5d47f7d`, and M2-02 is
 committed locally as `c4be2d9`, and M2-03 is committed locally as `00ab520`.
 M2-04 is committed locally as `511b969`, and M2-05 is committed locally as
 `afbcdc1`. M2-06 is committed locally as `0f85896`; M2-07 has passed the final
-unit, browser, build, audit, and documentation gates. Shopper-facing feature
-work has not started.
+unit, browser, build, audit, and documentation gates. The M3 typed query,
+selection, quote, and guarded method-change flow is now implemented.
 
 ## Milestone M0 — Design gates and repository foundation
 
@@ -582,12 +581,12 @@ owners if they do not share files. Route integration remains lead-owned.
 | M3-01 | Add QueryClient provider, typed API client, and query keys. | M1-09, M2-07 | `DONE` | Lead | QueryClient ownership, cancelable typed transport, runtime success/problem validation, reference-aware keys, 267 repository tests, build, and audit pass. |
 | M3-02 | Build merchant/order summary and method-selection step. | M3-01 | `DONE` | Lead | Validated hosted-session summary, exact locale-safe EUR formatting, all six API methods, keyboard selection, recovery UI, 273 tests, build, and Chromium journey pass. |
 | M3-03 | Implement quote mutation and stale-response protection. | M3-01, M3-02 | `DONE` | Lead | Superseded requests abort; ignored cancellation and late obsolete success cannot update the visible quote or payment-reference cache; 276 tests and Chromium journey pass. |
-| M3-04 | Build fixed issued-method and guarded-change flow. | M3-03 | `READY` | Unassigned | Active instructions are not edited in place; warning and confirmation work. |
-| M3-05 | Build exact amount, fee breakdown, address/copy, and network safety UI. | M3-03 | `BLOCKED` | Unassigned | One quote supplies all fields; network is explicit; copy is exact and announced; inline guidance explains the irreversible transfer steps without relying on the dead problem-type URI. |
-| M3-06 | Add local QR generation and QR/address consistency tests. | M3-05 | `BLOCKED` | Unassigned | No remote data disclosure; QR payload matches visible validated instruction. |
-| M3-07 | Add responsive and accessibility verification for quote flow. | M3-02..M3-06 | `BLOCKED` | Unassigned | Keyboard/mobile/contrast/status criteria pass. |
-| M3-08 | Integrate Figma direction when available without changing domain behavior. | M3-02..M3-07 | `BLOCKED` | Lead + candidate | Visual implementation preserves safety hierarchy and responsive behavior. |
-| M3-09 | Commit the safe quote slice. | M3-08 | `BLOCKED` | Lead | Focused checks and visual review pass. |
+| M3-04 | Build fixed issued-method and guarded-change flow. | M3-03 | `DONE` | Lead | Issued method controls are removed; the guarded warning defaults to keeping the quote, restores focus on cancel, and deactivates instructions before selection returns; 277 tests and all four Chromium journeys pass. |
+| M3-05 | Build exact amount, fee breakdown, address/copy, and network safety UI. | M3-03 | `DONE` | Lead | One validated quote supplies the exact total, breakdown, network, and address; copy is exact, announced without focus movement, and recoverable; 283 tests and all four Chromium journeys pass. |
+| M3-06 | Add local QR generation and QR/address consistency tests. | M3-05 | `DONE` | Lead | Local SVG generation encodes the exact visible address; asset/network are explicit; no external QR request occurs; 283 tests, build, audit, and four Chromium journeys pass. |
+| M3-07 | Add responsive and accessibility verification for quote flow. | M3-02..M3-06 | `DONE` | Lead | 390px layout, wrapping, touch targets, keyboard focus, reduced motion, semantic states, and measured text contrast pass; 283 tests, build, and six Chromium journeys pass. |
+| M3-08 | Integrate Figma direction when available without changing domain behavior. | M3-02..M3-07 | `DONE` | Lead + candidate | Candidate reference and normal-scale desktop/mobile captures were compared; visual direction is retained while the task-dense selector remains primary; issued state has truthful heading/copy; all gates pass. |
+| M3-09 | Commit the safe quote slice. | M3-08 | `DONE` | Lead | Candidate-approved feature and accessibility/visual commits were created locally after all unit, build, browser, audit, and visual gates passed; no push performed. |
 
 ### M3 safe parallelism
 
@@ -664,11 +663,146 @@ Risks/assumptions: an aborted request may already have reached the backend;
 Next: M3-04
 ```
 
+### M3-04 evidence
+
+```text
+Task: M3-04
+Status: DONE
+Owner: Lead
+Files: fixed-method commitment component; checkout integration and tests;
+       guarded-change Chromium journey; execution and discussion documentation
+Checks: pnpm check; pnpm build; pnpm test:e2e; focused Prettier check;
+        git diff --check
+Results: 26 Vitest files and 277 tests, formatting, ESLint, strict TypeScript,
+         production build, and all 4 Chromium journeys pass
+Requirements: issued asset/network immutability; explicit destructive-action
+              warning; safe default and focus restoration; old instructions
+              deactivate before another method can be selected
+Risks/assumptions: status polling starts in M4, so the method-change action is
+                   currently available for every newly issued awaiting-payment
+                   quote; M4 removes it as soon as authoritative detection is
+                   observed; the abandoned reference remains cache-addressable
+                   but is no longer rendered as an active instruction
+Next: M3-05
+```
+
+### M3-05 evidence
+
+```text
+Task: M3-05
+Status: DONE
+Owner: Lead
+Files: transfer-instruction, network-safety, and address-copy components and
+       tests; quote precision/total validation; checkout and Chromium journey;
+       architecture, execution, and discussion documentation
+Checks: 11 focused component/page tests; pnpm check; pnpm build;
+        pnpm test:e2e; git diff --check
+Results: 28 Vitest files and 283 tests, formatting, ESLint, strict TypeScript,
+         production build, and all 4 Chromium journeys pass
+Requirements: PR-04; PR-05 except QR; MR-02; MR-05; exact address copy;
+              accessible copy success/failure; inline wrong-network guidance
+Risks/assumptions: quote monetary scale is cross-validated against the exact
+                   catalog metadata captured when selection occurs; the quote
+                   total is accepted only when it exactly equals payment amount
+                   plus network fee; countdown and QR remain M3-06/M4 work
+Next: M3-06
+```
+
+### M3-06 evidence
+
+```text
+Task: M3-06
+Status: DONE
+Owner: Lead
+Files: package.json and pnpm lockfile; local payment QR component; transfer
+       instruction consistency test; Chromium no-external-request assertion;
+       execution, architecture, and discussion documentation
+Checks: 9 focused page/instruction tests; pnpm check; pnpm build;
+        pnpm test:e2e; pnpm audit --json; git diff --check
+Results: exact qrcode.react 4.2.0; 28 Vitest files and 283 tests, formatting,
+         ESLint, strict TypeScript, production build, and all 4 Chromium
+         journeys pass; 0 advisories across 559 dependencies
+Requirements: remaining PR-05 QR requirement; local generation; exact
+              address/QR identity; explicit network and asset; no remote data
+Risks/assumptions: the assessment and candidate discussion define the QR as the
+                   exact destination address rather than a chain-specific URI;
+                   the shopper must still verify asset and network in the wallet
+Next: M3-07
+```
+
+### M3-07 evidence
+
+```text
+Task: M3-07
+Status: DONE
+Owner: Lead
+Files: global reduced-motion policy; method-card motion fallback; mobile,
+       keyboard, contrast, status, and recoverable-error browser checks;
+       execution and discussion documentation
+Checks: 2 focused Chromium checks; pnpm check; pnpm build;
+        pnpm test:e2e; git diff --check
+Results: 28 Vitest files and 283 tests, formatting, ESLint, strict TypeScript,
+         production build, and all 6 Chromium journeys pass
+Requirements: responsive quote flow; no horizontal overflow; address/QR fit;
+              44px actions; keyboard method issuance and dialog focus recovery;
+              reduced motion; semantic status/error regions; WCAG 4.5:1 text
+              contrast for normal, success, warning, and error treatments
+Risks/assumptions: full automated accessibility scanning across every lifecycle
+                   outcome remains M6-06; the focused accessibility journey
+                   intercepts quote creation to avoid mutating shared simulator
+                   state while the separate shopper journey exercises real HTTP
+Next: M3-08
+```
+
+### M3-08 evidence
+
+```text
+Task: M3-08
+Status: DONE
+Owner: Lead + candidate reference
+Files: state-aware checkout heading/copy and assertions; visual-review evidence;
+       execution and discussion documentation
+Checks: normal-scale desktop selection and issued-quote captures; full-page
+        mobile issued-quote capture; pnpm check; pnpm build; pnpm test:e2e;
+        git diff --check
+Results: candidate screenshot's restrained palette, rounded cards, typography,
+         order-summary treatment, and safety hierarchy are retained; 28 Vitest
+         files/283 tests, production build, and 6 Chromium journeys pass
+Requirements: visual direction without lifecycle/domain drift; truthful issued
+              state; task priority; desktop/mobile readability
+Risks/assumptions: live Figma MCP extraction remains unavailable, so the
+                   candidate-provided full reference screenshot is the visual
+                   source; final candidate review can refine polish without
+                   changing the verified payment hierarchy
+Next: M3-09
+```
+
+### M3-09 evidence
+
+```text
+Task: M3-09
+Status: DONE
+Owner: Lead
+Commits: feat(checkout): render network-safe payment instructions;
+         style(checkout): refine accessible responsive checkout
+Checks: pnpm check; pnpm build; pnpm test:e2e; pnpm audit --json;
+        git diff --check; staged diff checks before both commits
+Results: 28 Vitest files and 283 tests, formatting, ESLint, strict TypeScript,
+         production build, and all 6 Chromium journeys pass; dependency audit
+         has 0 advisories across 559 dependencies; normal-scale desktop/mobile
+         visual review completed
+Requirements: M3 safe-quote slice committed with real unsquashed history
+Risks/assumptions: host Node remains 24.16.0 versus the repository's declared
+                   24.18.0 minimum; live Figma MCP remains unavailable; no push
+                   was performed
+Next: M4-01
+```
+
 ## Milestone M4 — Countdown, polling, and lifecycle
 
 | ID | Task | Depends on | Status | Owner | Acceptance gate / evidence |
 | --- | --- | --- | --- | --- | --- |
-| M4-01 | Implement absolute countdown and focus/visibility recomputation. | M1-07, M3-09 | `BLOCKED` | Unassigned | Background time jump is immediately correct; no decremented authoritative counter. |
+| M4-01 | Implement absolute countdown and focus/visibility recomputation. | M1-07, M3-09 | `READY` | Unassigned | Background time jump is immediately correct; no decremented authoritative counter. |
 | M4-02 | Implement zero-time status reconciliation. | M4-01, M3-01 | `BLOCKED` | Lead | Exactly one reconciliation; detected payment never becomes locally expired. |
 | M4-03 | Implement requote UI, atomic replacement, and 409 recovery. | M2-05, M4-02 | `BLOCKED` | Unassigned | Old instructions deactivate; complete new quote appears; conflict is recoverable. |
 | M4-04 | Implement non-overlapping dynamic status polling. | M1-07, M3-01 | `BLOCKED` | Lead | Maximum one request; cleanup on unmount/reference change; terminal stop policy. |

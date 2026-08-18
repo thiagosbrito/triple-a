@@ -845,3 +845,140 @@ lets a later USDC/Polygon request succeed, then resolves the obsolete USDT/Tron
 response. The old mutation completes but creates no query-cache entry and does
 not replace the visible Polygon quote. M3-03 passed all 276 repository tests,
 the production build, and all four Chromium journeys.
+
+## 2026-08-18 - M3-04 fixed quote and guarded method change
+
+Once quote creation succeeds, the asset/network radios are removed instead of
+remaining editable beside issued instructions. The page shows the validated
+asset, network, and payment reference as fixed properties of that quote.
+
+Changing method is deliberately guarded while the quote is still locally in
+its initial awaiting-payment phase. The warning states that changing is safe
+only when no funds have been sent or transfer started. "Keep current quote" is
+the first and initially focused action; cancelling with that action or Escape
+restores focus to the initiating button. Explicit confirmation clears the
+rendered quote before returning to method selection. The abandoned quote stays
+addressable by its payment reference in the query cache, but cannot reappear as
+the active instruction through the old selection flow.
+
+The mock's `network_disconnect` still intentionally errors the response stream
+after the route handler returns. Next.js logs a response-pipe error because the
+failure occurs during stream consumption; the client correctly receives a
+transport failure rather than an HTTP or payment business state. This expected
+server log remains documented rather than weakening the scenario to an HTTP
+500 response.
+
+M3-04 passed all 277 repository tests, the production build, and all four
+Chromium journeys. The browser journey now waits for and validates the payment
+POST response before asserting that the issued quote replaced the selector;
+waiting on the removed radio would incorrectly race the intended UI change.
+
+## 2026-08-18 - M3-05 exact transfer instructions
+
+The issued quote now renders one cohesive transfer instruction containing the
+authoritative total due, crypto payment amount, network fee, asset, network,
+and destination address. No displayed transfer value is recomputed. The
+network appears beside the primary amount, in a text-based safety notice, and
+again beside the destination address. The warning is inline and explains the
+safe action without depending on the dead external problem-type URI previously
+identified by the candidate.
+
+Dynamic catalog metadata supplies asset precision at selection time. That
+precision is captured with the quote intent, so a six- or eighteen-decimal
+limit is checked against the response that belongs to that exact selection.
+Exact `big.js` arithmetic also verifies that total due equals crypto amount plus
+network fee. An over-precision or inconsistent response becomes a protocol
+error before any transfer instructions enter the query cache or UI.
+
+Address copy writes the exact same validated string that is visibly rendered.
+Success is announced through a polite status without moving focus; denial or
+an unavailable Clipboard API leaves the full address visible and provides a
+manual-copy recovery message. The first headless browser run exercised that
+denial path because Chromium lacked clipboard permission. The happy-path
+journey now explicitly grants clipboard permission, while the denied path
+remains covered in component tests.
+
+M3-05 passed 11 focused component/page tests, all 283 repository tests, the
+production build, and all four Chromium journeys.
+
+## 2026-08-18 - M3-06 local QR consistency
+
+The current stable registry release `qrcode.react` 4.2.0 was installed as an
+exact production dependency, matching the previously accepted ADR. It renders
+an inline SVG with the specified four-module quiet zone; no payment details are
+sent to a QR or image service.
+
+The QR payload is exactly `quote.crypto_address`, the same validated value
+rendered and copied beside it. Its accessible name also states the asset and
+network. The UI explains that scanning supplies the destination address only
+and that the shopper must still verify the asset and network in the wallet.
+This preserves the earlier candidate correction that a QR display or scan is
+not evidence that a transfer has started.
+
+Component verification compares the QR payload attribute with the exact visible
+address. The Chromium journey checks the same identity and records every page
+request, confirming that rendering the quote/QR initiates no request outside
+the local checkout origin. M3-06 passed all 283 repository tests, the production
+build, all four Chromium journeys, and an audit with zero advisories across 559
+dependencies.
+
+## 2026-08-18 - M3-07 responsive and accessibility gate
+
+The quote flow is now verified at a 390px viewport for horizontal overflow,
+QR sizing, address wrapping, and 44px minimum action height. Keyboard-only
+coverage creates a quote from the semantic radio, opens the guarded-change
+dialog, verifies the safe action receives focus, cancels with Escape, and
+verifies focus returns to the initiating control. A global reduced-motion rule
+now reliably suppresses transitions and animated scrolling when the operating
+system preference requests it.
+
+Browser checks measure rendered foreground/background colors and require at
+least the WCAG 4.5:1 normal-text ratio for neutral guidance, quote success,
+network warning, and recoverable error copy. The checker uses the browser's
+canvas color conversion because Chromium serializes Tailwind 4 colors in the
+CIELAB color space rather than legacy RGB.
+
+The first full parallel browser run exposed shared mock-state interference: the
+new accessibility journey issued the same fixed payment reference while the API
+lifecycle journey was advancing it. The accessibility-only quote POST is now
+fulfilled at the browser boundary, so it tests presentation without mutating the
+simulator. The existing primary shopper journey still exercises the real Next
+route handler. M3-07 passed all 283 repository tests, the production build, and
+all six Chromium journeys.
+
+## 2026-08-18 - M3-08 Figma-reference integration
+
+The live Figma MCP remains unavailable in the VS Code session, so the
+candidate-provided full reference screenshot was used as the visual source.
+Temporary normal-scale captures covered desktop selection, desktop issued
+instructions, and the full mobile issued flow. The implementation retains the
+reference's restrained slate/emerald palette, rounded bordered cards, strong
+typographic hierarchy, compact merchant summary, and explicit safety copy.
+
+The implementation deliberately keeps the task-dense method/instruction area
+as the flexible primary desktop column and the order summary as a compact sticky
+sidebar. The reference screenshot showed the inverse proportions, but that made
+six interactive network choices occupy a narrow rail while a small static
+summary consumed most of the viewport. This divergence preserves the visual
+language while prioritizing the shopper's transfer decision and preventing
+unnecessarily tall selection cards.
+
+Visual review found one misleading state label: after a quote succeeded, the
+page still said "Choose how to pay" even though the method controls were
+correctly removed. The issued state now says "Complete your payment" and tells
+the shopper to review the exact amount, network, and destination. Confirmed
+method change restores the original selection heading. No transport, monetary,
+or lifecycle behavior changed.
+
+M3-08 passed all 283 repository tests, the production build, and all six
+Chromium journeys after the visual refinement.
+
+## 2026-08-18 - M3 commit boundary
+
+The candidate-approved M3 strategy was preserved. Quote-query ownership and
+creation remain in the two earlier focused commits. Fixed-method handling,
+exact monetary/address instructions, local QR generation, and their tests form
+the network-safe instruction feature commit. Reduced-motion behavior,
+responsive/keyboard/contrast browser verification, visual-state refinement,
+and final M3 documentation form the accessibility/visual commit. No history was
+squashed or amended and no push was performed.
