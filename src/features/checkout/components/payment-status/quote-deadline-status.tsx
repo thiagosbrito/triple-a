@@ -19,6 +19,7 @@ type QuoteDeadlineStatusProps = Readonly<{
     isAtDeadline: boolean;
   }>;
   requote: RequoteResult;
+  onRetryStatus(): void;
 }>;
 
 export const QuoteDeadlineStatus = ({
@@ -26,6 +27,7 @@ export const QuoteDeadlineStatus = ({
   phase,
   countdown,
   requote,
+  onRetryStatus,
 }: QuoteDeadlineStatusProps) => (
   <>
     <QuoteCountdown expiresAt={payment.quote.expires_at} {...countdown} />
@@ -35,7 +37,7 @@ export const QuoteDeadlineStatus = ({
       <ExpiredQuotePanel payment={payment} requote={requote} />
     ) : null}
     {phase === "unavailable" ? (
-      <UnavailableQuotePanel payment={payment} />
+      <UnavailableQuotePanel payment={payment} onRetryStatus={onRetryStatus} />
     ) : null}
   </>
 );
@@ -81,7 +83,11 @@ const ExpiredQuotePanel = ({
 
 const UnavailableQuotePanel = ({
   payment,
-}: Readonly<{ payment: CreatePaymentResponse }>) => (
+  onRetryStatus,
+}: Readonly<{
+  payment: CreatePaymentResponse;
+  onRetryStatus(): void;
+}>) => (
   <section
     role="alert"
     aria-labelledby="deadline-status-title"
@@ -95,6 +101,13 @@ const UnavailableQuotePanel = ({
       <span className="font-mono">{payment.payment_reference}</span> while
       connectivity recovers.
     </p>
+    <button
+      type="button"
+      className="mt-4 min-h-11 rounded-xl bg-rose-950 px-4 py-2 text-sm font-semibold text-white outline-offset-2 hover:bg-rose-900 focus-visible:outline-2 focus-visible:outline-rose-950"
+      onClick={onRetryStatus}
+    >
+      Retry payment status
+    </button>
   </section>
 );
 

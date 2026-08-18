@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { checkoutApi } from "../api/checkout-api";
 import { checkoutQueryKeys } from "../api/checkout-query-keys";
@@ -49,6 +49,10 @@ export const useDeadlineReconciliation = (
       reconciliation.phase === "locally_expired"
         ? false
         : getPaymentPollInterval(query.state.data),
+    // Payment-status reconciliation must settle into an explicit transport
+    // error while offline. The default `online` mode pauses indefinitely and
+    // would leave expired instructions stuck in a "checking" state.
+    networkMode: "always",
     retry: shouldRetryPaymentStatus,
     retryDelay: getPaymentStatusRetryDelay,
   });
@@ -57,6 +61,7 @@ export const useDeadlineReconciliation = (
     !statusQuery.data ||
       statusQuery.data.status === PAYMENT_STATUS.awaiting_payment,
   );
+  const refetchPaymentStatus = statusQuery.refetch;
 
   useEffect(
     () => () => {
@@ -65,44 +70,47 @@ export const useDeadlineReconciliation = (
     [],
   );
 
+  const reconcilePaymentStatus = useCallback(async (): Promise<void> => {
+    const currentGeneration = generation.current + 1;
+    generation.current = currentGeneration;
+    setReconciliation({ phase: "reconciling" });
+
+    try {
+      const result = await refetchPaymentStatus({ cancelRefetch: false });
+
+      if (generation.current !== currentGeneration) {
+        return;
+      }
+
+      if (result.isError || !result.data) {
+        setReconciliation({ phase: "unavailable" });
+        return;
+      }
+
+      if (result.data.status === PAYMENT_STATUS.awaiting_payment) {
+        setReconciliation({ phase: "locally_expired" });
+        return;
+      }
+
+      setReconciliation({
+        phase: "authoritative_status",
+        statusUpdate: result.data,
+      });
+    } catch {
+      if (generation.current === currentGeneration) {
+        setReconciliation({ phase: "unavailable" });
+      }
+    }
+  }, [refetchPaymentStatus]);
+
   useEffect(() => {
     if (!countdown.isAtDeadline || attemptedAtDeadline.current) {
       return;
     }
 
     attemptedAtDeadline.current = true;
-    const currentGeneration = generation.current + 1;
-    generation.current = currentGeneration;
-    setReconciliation({ phase: "reconciling" });
-
-    void statusQuery
-      .refetch({ cancelRefetch: false })
-      .then((result) => {
-        if (generation.current !== currentGeneration) {
-          return;
-        }
-
-        if (result.isError || !result.data) {
-          setReconciliation({ phase: "unavailable" });
-          return;
-        }
-
-        if (result.data.status === PAYMENT_STATUS.awaiting_payment) {
-          setReconciliation({ phase: "locally_expired" });
-          return;
-        }
-
-        setReconciliation({
-          phase: "authoritative_status",
-          statusUpdate: result.data,
-        });
-      })
-      .catch(() => {
-        if (generation.current === currentGeneration) {
-          setReconciliation({ phase: "unavailable" });
-        }
-      });
-  }, [countdown.isAtDeadline, statusQuery]);
+    void reconcilePaymentStatus();
+  }, [countdown.isAtDeadline, reconcilePaymentStatus]);
 
   const phase =
     statusQuery.data &&
@@ -120,6 +128,7 @@ export const useDeadlineReconciliation = (
     ...countdown,
     phase,
     statusUpdate,
+    reconcilePaymentStatus,
     transport: {
       error: statusQuery.error,
       failureCount: statusQuery.failureCount,

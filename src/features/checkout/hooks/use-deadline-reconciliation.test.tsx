@@ -1,4 +1,8 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  onlineManager,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
 import { act, renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -68,6 +72,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  onlineManager.setOnline(true);
   vi.useRealTimers();
   vi.restoreAllMocks();
 });
@@ -220,6 +225,50 @@ describe("useDeadlineReconciliation polling", () => {
     expect(client.getQueryData<PaymentStatusUpdate>(statusKey)?.status).toBe(
       PAYMENT_STATUS.confirming,
     );
+  });
+
+  it("settles offline deadline reconciliation and supports a manual retry", async () => {
+    const expiringPayment = createPaymentResponseSchema.parse({
+      ...payment,
+      quote: {
+        ...payment.quote,
+        expires_at: new Date(START.getTime() + 1_000).toISOString(),
+      },
+    });
+    const awaitingPayment = createPaymentStatusUpdate(
+      expiringPayment,
+      PAYMENT_STATUS.awaiting_payment,
+      START,
+    );
+    let isOffline = false;
+    const fetcher = vi.spyOn(globalThis, "fetch").mockImplementation(() => {
+      return isOffline
+        ? Promise.reject(new TypeError("offline"))
+        : Promise.resolve(responseFor(awaitingPayment));
+    });
+    const { result } = renderHook(
+      () => useDeadlineReconciliation(expiringPayment, 6),
+      { wrapper: wrapper(queryClient()) },
+    );
+
+    await advance(0);
+    expect(fetcher).toHaveBeenCalledOnce();
+
+    isOffline = true;
+    onlineManager.setOnline(false);
+    await advance(1_000);
+    expect(result.current.phase).toBe("reconciling");
+
+    await advance(7_000);
+    await flushResponse();
+    expect(fetcher).toHaveBeenCalledTimes(5);
+    expect(result.current.phase).toBe("unavailable");
+
+    isOffline = false;
+    await act(async () => {
+      await result.current.reconcilePaymentStatus();
+    });
+    expect(result.current.phase).toBe("locally_expired");
   });
 
   it("aborts the obsolete request when the payment reference changes", async () => {

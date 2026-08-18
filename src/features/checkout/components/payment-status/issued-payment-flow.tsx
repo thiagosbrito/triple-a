@@ -67,6 +67,9 @@ export const IssuedPaymentFlow = ({
           phase={deadline.phase}
           countdown={countdown}
           requote={requote}
+          onRetryStatus={() => {
+            void deadline.reconcilePaymentStatus();
+          }}
         />
       ) : null}
 

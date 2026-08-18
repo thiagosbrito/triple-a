@@ -113,3 +113,43 @@ test("lets detected funds win when the deadline status check resolves", async ({
     page.getByRole("button", { name: "Request new quote" }),
   ).toHaveCount(0);
 });
+
+test("leaves offline deadline reconciliation and recovers manually", async ({
+  context,
+  page,
+  request,
+}) => {
+  const payment = await createAwaitingPayment(page, request);
+  await context.setOffline(true);
+
+  try {
+    await restoreAfterDeadline(page, payment.quote.expires_at);
+    await expect(page.getByText("Checking payment status")).toBeVisible();
+
+    const unavailable = page.getByRole("alert", {
+      name: "Payment status could not be confirmed",
+    });
+    await expect(unavailable).toContainText(
+      "Do not send and do not assume the quote expired",
+      { timeout: 12_000 },
+    );
+    await expect(
+      unavailable.getByRole("button", { name: "Retry payment status" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "Send exactly" }),
+    ).toHaveCount(0);
+  } finally {
+    await context.setOffline(false);
+  }
+
+  await page.getByRole("button", { name: "Retry payment status" }).click();
+  await expect(
+    page.getByRole("button", { name: "Request new quote" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("alert", {
+      name: "Payment status could not be confirmed",
+    }),
+  ).toHaveCount(0);
+});
