@@ -44,12 +44,12 @@ export function PaymentMethodSelector({
             aria-labelledby={`currency-${currencyIndex}`}
           >
             <div className="mb-3 flex items-baseline gap-2">
-              <h3
+              <h2
                 id={`currency-${currencyIndex}`}
                 className="text-base font-semibold text-slate-950"
               >
                 {currency.code}
-              </h3>
+              </h2>
               <p className="text-sm text-slate-500">{currency.name}</p>
             </div>
 
