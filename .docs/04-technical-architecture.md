@@ -1,6 +1,6 @@
 # Technical Architecture
 
-Status: M3 query and transport foundation in progress
+Status: M5 adverse-transport and evaluator-control implementation complete
 Scope: Architecture and implementation baseline
 
 ## Goals
@@ -508,7 +508,7 @@ These are named implementation constants with deterministic tests. They are a
 responsive assessment policy and do not pretend the mock's timing represents
 real chain timing.
 
-M4 implements the active portion as the same reference-scoped TanStack query
+The active polling and retry implementation uses the same reference-scoped TanStack query
 used by deadline reconciliation. The first status request starts when issued
 instructions mount. The next interval is selected from the last validated
 status only after the current request settles, and deadline reconciliation
@@ -518,8 +518,11 @@ Reference changes and unmount consume the query signal and abort obsolete
 transport work. When a validated status proves funds arrived, expiration is
 disabled and its timer/focus/visibility listeners are removed. Fake-time tests
 prove dynamic intervals, a maximum of one unresolved request, terminal stop,
-and cancellation cleanup. M5 adds the specified failure-count backoff and
-shopper-facing degraded-connectivity treatment.
+and cancellation cleanup. Retryable fetch/stream failures and validated server
+problems retry after 1, 2, and 4 seconds. Protocol violations and non-server
+problems do not retry aggressively. The last validated business state remains
+visible throughout, automatic polling can recover later, and exhausted retries
+offer a manual status refresh without implying failure or expiry.
 
 ## Mock scenario design
 
@@ -545,20 +548,21 @@ Orthogonal transport controls:
 - selectable HTTP 500 versus simulated network disconnect where feasible.
 
 The committed store defaults each newly created payment to an exact
-`awaiting_payment` state. Re-registering the assessment's deterministic
-reference replaces its prior mock session and resets all controls. Delay is
-validated from zero through 30 seconds. One-shot and persistent failures are
-consumed before lifecycle simulation so a failed transport attempt never
-advances the payment. The singleton is kept on the server process global to
-survive development hot reload and is intentionally not multi-instance or
-deployment-safe.
+`awaiting_payment` state. Creation allocates a distinct process-local reference
+for every checkout, preventing another browser tab or test run from replacing
+an open shopper's quote and scenario. Requote deliberately preserves that
+reference. Delay is validated from zero through 30 seconds. One-shot and
+persistent failures are consumed before lifecycle simulation so a failed
+transport attempt never advances the payment. The singleton store and reference
+sequence are kept on the server process global to survive development hot reload
+and are intentionally not multi-instance or deployment-safe.
 
 Scenario controls must be visibly marked development-only and must exercise the
 same HTTP endpoints as normal behavior. They must not set React query data
 directly.
 
 `GET` and `PUT /api/dev/scenario` expose the validated configuration for the
-later development panel and automated HTTP checks. They are available only when
+development panel and automated HTTP checks. They are available only when
 `NODE_ENV` is not `production`, use no-store responses, and require a registered
 payment reference. The status route models a network disconnect with an errored
 response stream; real Next.js verification produces an empty client reply and
@@ -568,8 +572,14 @@ Development status requests are instrumented per payment reference with the
 current in-flight count, maximum in-flight count, and total started/completed
 counts. `GET` and `DELETE /api/dev/requests` expose and reset those validated
 metrics outside production. The shopper application never imports or mutates
-the instrumentation; later polling tests use the HTTP evidence to prove a
-maximum of one in-flight request.
+the instrumentation. The development-only dock uses a typed, Zod-validated
+HTTP client and renders every status, progression, delay, failure, and metric
+control in an explicitly separate complementary region. It is hidden behind a
+labelled launcher, toggles with Cmd/Ctrl+Shift+K, shifts the checkout canvas on
+wide screens, becomes a bottom sheet on small screens, and restores launcher
+focus when closed. A Playwright journey
+holds a real status response open beyond the normal polling interval and uses
+the HTTP metrics to prove a maximum of one in-flight request.
 
 ## Accessibility requirements
 

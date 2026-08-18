@@ -1112,3 +1112,125 @@ The final uncommitted M4 gate passed 37 test files and 353 tests, formatting,
 ESLint, strict TypeScript, the production build, all six serialized Chromium
 journeys, and diff hygiene. M4-08 remains uncommitted pending candidate review
 of the real-history commit breakdown.
+
+## 2026-08-18 - M4 approved commits and push
+
+The candidate approved the four-part M4 history. Lifecycle state control,
+shopper presentation, deterministic browser isolation, and documentation were
+committed separately without amending or squashing. The candidate then approved
+the push; `main` was pushed through commit `34e398a`.
+
+## 2026-08-18 - M5 bounded transport recovery
+
+Payment-status fetch and validated server failures now retry after 1, 2, and 4
+seconds. Protocol violations, 409 problems, and unrelated application errors do
+not receive automatic transport retry. TanStack Query retains the last
+validated payment state while retries run and after they are exhausted; later
+normal polling or an explicit manual retry can recover without a reload.
+
+Connectivity copy distinguishes automatic retry, exhausted transport, and an
+unverified protocol response. It never maps a connection problem to payment
+`failed` or `expired`, and it tells shoppers not to send again while the last
+recognized state remains visible. M5 focused tests prove a detected state
+survives all four failed attempts and later advances to confirming.
+
+## 2026-08-18 - M5 development evaluator controls and overlap evidence
+
+The development panel consumes a typed, Zod-validated HTTP client rather than
+importing mock stores or fixtures. It is a visibly dashed, semantically named
+complementary region below the shopper experience and exposes every lifecycle
+state, happy-path progression, a 0–30-second delay, one-shot or persistent HTTP
+500/network-disconnect behavior, and live/resettable request metrics. Applying
+a scenario explicitly refetches the active status query so an evaluator can
+move away from a state where periodic polling has already stopped.
+
+The mock and panel now share development HTTP schemas owned by the checkout API
+contract boundary. Mock stores retain only simulation behavior. The production
+page hides the panel and both development routes continue to return 404.
+
+A new Playwright journey creates a real quote, configures a 5-second status
+delay, and observes backend metrics after more than the normal 3-second polling
+interval. The request remains in flight and `maximum_in_flight` stays exactly
+one. The full M5 gate passes 40 Vitest files/364 tests, production compilation,
+and all seven serialized Chromium journeys. M5 remains uncommitted pending the
+candidate's commit-strategy review.
+
+## 2026-08-18 - Candidate-found cross-session quote collision
+
+During candidate review, a quote reached expiry, the UI changed elements, and
+requesting a replacement did not succeed. The problem was not the requote
+button: every mock payment creation reused `AQH-100306-PMT`. Playwright reused
+the candidate's running development server and a test-created payment silently
+replaced the server-side record behind the candidate's open tab. The tab still
+held the earlier expired quote, while the server associated the same reference
+with a newer active quote and correctly rejected the apparent early requote.
+
+This violated reference identity and made manual evaluation unsafe. Payment
+creation now allocates a distinct process-local reference for every checkout;
+requote continues to preserve the selected reference. The deterministic store,
+scenario controls, status route, and request metrics were already keyed by
+reference and therefore isolate sessions once creation stops colliding. README
+commands now tell evaluators to use the reference returned by POST.
+
+A route regression creates two quotes one minute apart, reaches only the first
+deadline, requotes it, and proves the second quote is unchanged. A browser
+regression opens one shopper quote, creates another checkout concurrently,
+drives only the first to expiry, and successfully renders a fresh three-minute
+quote from the UI. With this correction, Playwright no longer requires one
+worker: all eight journeys pass across four workers. The complete corrected M5
+gate passes 40 Vitest files/365 tests, the production build, and diff hygiene.
+
+## 2026-08-18 - Candidate clarification of polling diagnostics
+
+The candidate identified that the evaluator label `Started` could be mistaken
+for a shopper transaction starting. The panel now uses explicitly transport-
+scoped language: `Checking now`, `Peak concurrent checks`, `Checks sent`, and
+`Checks finished`. It also states that the expected peak is one and that a
+higher value means status polling overlapped. No payment lifecycle meaning or
+instrumentation behavior changed.
+
+## 2026-08-18 - Candidate refinement of evaluator-tool placement
+
+The candidate found that a full-width panel below the page prevented an
+evaluator from seeing the checkout while operating scenarios. The controls are
+now hidden by default behind a floating `Dev tools` launcher and
+Cmd/Ctrl+Shift+K. On wide screens, a fixed 22rem dock opens on the right while
+the shopper canvas gains matching space; on small screens it becomes a bounded,
+independently scrolling bottom sheet.
+
+Payment state, network conditions, and polling diagnostics are compact,
+collapsible groups. The dock stays non-modal so the evaluator can inspect and
+operate the checkout at the same time. Escape and the labelled close button
+restore focus to the launcher. This changes development ergonomics only; mock
+HTTP contracts, shopper lifecycle behavior, and production exclusion remain
+unchanged. The corrected full gate passes 40 Vitest files/366 tests, the
+production build, and all eight Chromium journeys across four workers.
+
+## 2026-08-18 - Candidate-found Dev tools discovery gate
+
+The first dock implementation incorrectly rendered both its launcher and
+keyboard listener only after a quote existed. On the initial payment-method
+screen, Cmd/Ctrl+Shift+K therefore did nothing and there was no visible way to
+discover the tools. The candidate caught the issue during manual review.
+
+The launcher and shortcut are now available throughout the development
+checkout. Opening before quote creation shows a concise status explaining that
+the evaluator must select a payment method; once the API issues a reference,
+the dock exposes the scenario controls. Focus restoration and production
+exclusion are unchanged. Component and browser regressions cover both the
+pre-quote empty state and the post-quote controls.
+
+Fast Refresh then exposed that the shortcut effect's dependency-array length
+had changed during the same live edit, which React correctly rejected while
+preserving hook state. The dependency signature was restored to a stable three
+entries; a one-time hard reload clears the already-preserved development state.
+
+## 2026-08-18 - M5 approved commit boundary
+
+After manual review accepted the corrected dock and the documentation audit
+confirmed that candidate questions and solutions were preserved, the candidate
+approved the revised five-part strategy. The local history now separates
+payment-status resilience (`753b4c4`), the candidate-found cross-session fix
+(`97f2bb5`), evaluator tooling (`da0b512`), and browser evidence (`307568e`)
+before this documentation boundary. No commit was amended or squashed, and no
+push was performed as part of the local boundary.

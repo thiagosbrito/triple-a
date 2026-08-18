@@ -42,12 +42,11 @@ Only the lead agent updates task status. At most one critical-path task may be
 
 ## Current milestone
 
-**Milestone M4 implementation and verification complete — commit review is active.**
+**Milestone M5 is implemented, verified, and committed locally.**
 
 ### Next task
 
-`M4-08` — Review and commit the lifecycle slice
-handling. The task is active while the candidate reviews M3.
+`M6-01` — Implement the happy-path Playwright journey through paid.
 
 Milestone M1 is committed and verified. Contracts, lifecycle presentation,
 exact money handling, deadline reconciliation, polling policy, and all supplied
@@ -809,7 +808,7 @@ Next: M4-01
 | M4-05 | Implement detected and confirming presentations. | M4-04 | `DONE` | Lead | Exact received amount and network, zero/current confirmation progress, do-not-resend copy, transaction/reference identity, method lock, 322 tests, build, and six Chromium journeys pass. |
 | M4-06 | Implement paid, underpaid, overpaid, expired, and failed presentations. | M4-04 | `DONE` | Lead | Exact outcome data and safe next actions; underpaid-only transfer uses outstanding amount and consistent network/address/QR; no refund/retry promise; 338 tests, build, and six Chromium journeys pass. |
 | M4-07 | Add lifecycle component/integration tests. | M4-01..M4-06 | `DONE` | Lead | All eight statuses render through the polling boundary; all active/terminal poll classes, countdown races, requote races, cancellation, money/address consistency, and accessibility semantics are covered; final gate has 353 tests. |
-| M4-08 | Commit lifecycle slice. | M4-07 | `IN_PROGRESS` | Lead | Full relevant checks pass and lifecycle docs match implementation; commit strategy must be reviewed with the candidate before commits are created. |
+| M4-08 | Commit lifecycle slice. | M4-07 | `DONE` | Lead | Candidate-approved four-commit strategy was created and pushed through `34e398a`; no amend, squash, or force operation. |
 
 ### M4-01 evidence
 
@@ -969,17 +968,130 @@ Next: M4-08 commit strategy review
 
 | ID | Task | Depends on | Status | Owner | Acceptance gate / evidence |
 | --- | --- | --- | --- | --- | --- |
-| M5-01 | Implement retry/backoff and last-known-state preservation. | M4-08 | `BLOCKED` | Lead | Transport failure never becomes a business status or clears detected funds. |
-| M5-02 | Build connectivity notice and manual retry. | M5-01 | `BLOCKED` | Unassigned | Accessible, non-destructive, and recovers without reload. |
-| M5-03 | Build development-only scenario panel. | M2-07, M4-08 | `BLOCKED` | Unassigned | All states, slow response, and network/server errors are selectable through mock HTTP behavior. |
-| M5-04 | Verify slow responses never overlap polls. | M5-01, M5-03 | `BLOCKED` | Unassigned | Automated maximum-concurrency assertion passes. |
-| M5-05 | Commit adverse-condition/evaluator slice. | M5-01..M5-04 | `BLOCKED` | Lead | README trigger instructions match controls. |
+| M5-01 | Implement retry/backoff and last-known-state preservation. | M4-08 | `DONE` | Lead | Retryable transport/5xx failures use 1/2/4-second backoff; protocol/client errors stop; cached detected data survives exhaustion and later polling recovery. |
+| M5-02 | Build connectivity notice and manual retry. | M5-01 | `DONE` | Lead | Polite accessible retry/exhaustion/protocol treatments preserve business state, prohibit duplicate sending, and expose manual retry only after exhaustion. |
+| M5-03 | Build development-only scenario panel. | M2-07, M4-08 | `DONE` | Lead + candidate review | An always-discoverable compact launcher/dock has a pre-quote guidance state, then controls every state, progression, delay, failure, and diagnostic through validated HTTP; shortcut/Escape/focus and responsive behavior are covered; references isolate sessions; production returns 404. |
+| M5-04 | Verify slow responses never overlap polls. | M5-01, M5-03 | `DONE` | Lead | Playwright held a status response for 5s beyond the 3s interval and backend instrumentation remained current=1, maximum=1. |
+| M5-05 | Commit adverse-condition/evaluator slice. | M5-01..M5-04 | `DONE` | Lead | Candidate approved five focused commits; implementation/test commits are `753b4c4`, `97f2bb5`, `da0b512`, and `307568e`; this documentation boundary completes M5 without amend or squash. |
+
+### M5-01 evidence
+
+```text
+Task: M5-01
+Status: DONE
+Owner: Lead
+Files: payment-status retry policy/tests; deadline status query and integration
+       tests
+Checks: focused retry/hook tests; pnpm check; pnpm build; pnpm test:e2e
+Results: retryable TypeError and validated 5xx use exactly three retries at
+         1s/2s/4s; protocol, 409, and unrelated errors do not; last detected
+         data survives exhaustion and a later interval recovers to confirming
+Requirements: transport/business separation; last-known-state preservation;
+              bounded retry; automatic later recovery
+Risks/assumptions: host Node remains 24.16.0 versus declared >=24.18.0
+Next: M5-02
+```
+
+### M5-02 evidence
+
+```text
+Task: M5-02
+Status: DONE
+Owner: Lead
+Files: connectivity notice/tests; issued payment flow integration/tests
+Checks: focused component/integration tests; full M5 verification gate
+Results: automatic retry, exhausted transport, and invalid protocol responses
+         have distinct accessible copy; no transport path becomes failed or
+         expired; manual retry appears only when automatic retries finish
+Requirements: preserve business state; do-not-resend safety; accessible status;
+              recovery without reload
+Next: M5-03
+```
+
+### M5-03 evidence
+
+```text
+Task: M5-03
+Status: DONE
+Owner: Lead
+Files: shared development HTTP contracts/client/query keys; evaluator panel and
+       tests; mock stores/routes refactored to consume the shared contracts;
+       development-only page composition
+Checks: 40 focused panel/route/store tests; pnpm check; pnpm build;
+        pnpm test:e2e
+Results: all eight exact states, progression, delay, one-shot/persistent HTTP
+         and disconnect failures, and live/resettable metrics are selectable;
+         the panel never imports mock modules and production endpoints return 404
+Requirements: visibly/semantically separate controls; real HTTP behavior;
+              runtime validation; terminal-state refresh
+Next: M5-04
+```
+
+### M5-04 evidence
+
+```text
+Task: M5-04
+Status: DONE
+Owner: Lead
+Files: browser adverse-transport concurrency journey
+Checks: focused Chromium journey; pnpm check; pnpm build; pnpm test:e2e
+Results: 40 Vitest files/367 tests and 8 Chromium journeys pass; a 5-second
+         real status response remains the only in-flight request more than
+         3 seconds later; instrumentation reports maximum_in_flight=1
+Requirements: non-overlapping polling; evaluator-verifiable backend evidence
+Risks/assumptions: process-local mock state remains unsuitable for a
+                   multi-instance deployment, but references isolate tabs and
+                   parallel tests within the assessment server
+Next: M5-05 commit strategy review
+```
+
+### M5-05 evidence
+
+```text
+Task: M5-05
+Status: DONE
+Owner: Lead + candidate approval
+Commits: 753b4c4 feat(checkout): preserve payment state through status failures
+         97f2bb5 fix(mock): isolate concurrent checkout sessions
+         da0b512 feat(dev): add compact evaluator scenario dock
+         307568e test(e2e): verify adverse transport and safe requote
+         docs(checkout): record M5 decisions and evidence (this boundary)
+Checks: pnpm check; pnpm build; pnpm test:e2e; git diff --check; staged
+        diff checks before every commit
+Results: 40 Vitest files/367 tests, production build, and all 8 Chromium
+         journeys across 4 workers pass; manual candidate review accepted
+Requirements: coherent unsquashed history; evaluator instructions match UI;
+              candidate questions, findings, and corrections remain recorded
+Risks/assumptions: host Node is 24.16.0 versus declared >=24.18.0; no push
+                   was performed as part of the local commit boundary
+Next: M6-01
+```
+
+### M5 candidate review correction evidence
+
+```text
+Finding: an expired quote blinked and could not be replaced during candidate
+         review
+Root cause: every mock POST reused AQH-100306-PMT; browser tests running against
+            the reused development server overwrote the candidate's server-side
+            quote while the open tab retained its older quote
+Correction: payment creation allocates a distinct process-local reference;
+            requote preserves it; scenario stores and metrics stay reference
+            scoped; evaluator commands use the response reference
+Checks: two-session route regression; two-session expired-to-requote browser
+        journey; pnpm check; pnpm build; 8 Playwright journeys on 4 workers
+Results: the first session expires/requotes without changing the second; 40
+         Vitest files/365 tests and all 8 parallel Chromium journeys pass
+Requirements: stale/cross-session isolation; quote identity; safe requote;
+              candidate-owned review correction recorded truthfully
+Next: M5-05 commit strategy review
+```
 
 ## Milestone M6 — Critical journeys and accessibility
 
 | ID | Task | Depends on | Status | Owner | Acceptance gate / evidence |
 | --- | --- | --- | --- | --- | --- |
-| M6-01 | Happy-path Playwright journey through paid. | M5-05 | `BLOCKED` | Unassigned | Quote → awaiting → detected → confirming → paid; polling stops. |
+| M6-01 | Happy-path Playwright journey through paid. | M5-05 | `READY` | Unassigned | Quote → awaiting → detected → confirming → paid; polling stops. |
 | M6-02 | Background-expiry and detection/expiry race journeys. | M5-05 | `BLOCKED` | Unassigned | Absolute time and reconciliation invariants pass. |
 | M6-03 | Underpayment recovery journey. | M5-05 | `BLOCKED` | Unassigned | Only outstanding amount instructed; same network/address; accepted polling behavior. |
 | M6-04 | Slow/failing transport recovery journeys. | M5-05 | `BLOCKED` | Unassigned | Last known state preserved; no overlap; recovery succeeds. |

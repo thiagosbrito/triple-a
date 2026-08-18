@@ -4,14 +4,15 @@ A safety-focused hosted stablecoin checkout for the Triple-A Senior Fullstack
 Engineer take-home assessment. The implementation uses a Next.js frontend and
 colocated deterministic mock HTTP API.
 
-> Current status: deterministic mock HTTP API complete; checkout feature
-> development has not started. Follow progress in the
+> Current status: checkout lifecycle, resilient polling, and development
+> evaluator controls are implemented, verified, and committed locally through
+> M5. Follow progress in the
 > [delivery task list](./.docs/09-task-list.md).
 
 ## Scenario
 
-The finished checkout will collect EUR 149.90 for Nordwind Audio order
-`ORD-88213`. It will support the required USDT, USDC, and ETH network
+The checkout collects EUR 149.90 for Nordwind Audio order
+`ORD-88213`. It supports the required USDT, USDC, and ETH network
 combinations, exact quotes, local QR generation, absolute expiration, payment
 status polling, all eight lifecycle outcomes, and deterministic adverse network
 conditions.
@@ -66,8 +67,8 @@ pnpm exec playwright install chromium
 
 - Next.js 16.3.1 App Router and route handlers under `src/app`.
 - React/React DOM 19.2.8 and Tailwind CSS 4.
-- TanStack Query will be the sole owner of remote quote/payment state.
-- Zod will validate all untrusted HTTP responses.
+- TanStack Query is the sole owner of remote quote/payment state.
+- Zod validates all untrusted HTTP responses.
 - Monetary values remain decimal strings and use `big.js` strict mode for
   arithmetic; native floating-point money arithmetic is prohibited.
 - Vitest/Testing Library cover pure domain and client behavior; Playwright
@@ -75,7 +76,7 @@ pnpm exec playwright install chromium
 - Mock fixtures remain behind HTTP route handlers and are never imported by
   shopper-facing components.
 
-Planned application boundaries:
+Application boundaries:
 
 ```text
 src/
@@ -103,8 +104,25 @@ documents are:
 
 ## Mock scenarios
 
-Run `pnpm dev` before using the controls below. They deliberately return 404 in
-a production runtime and will later be driven by a development-only UI panel.
+Run `pnpm dev` and open <http://localhost:3000>. The floating **Dev tools**
+launcher is available immediately, or press **Cmd/Ctrl+Shift+K**. Before a
+quote exists, the dock explains that a payment method must be selected. After
+the quote is issued, its compact development-only controls open beside the
+checkout on desktop and as a bottom sheet on small screens. Its sections can:
+
+- pin any of the eight lifecycle states or run happy-path progression;
+- delay status responses from 0 to 30,000 milliseconds;
+- trigger the next request or every request as HTTP 500 or a simulated network
+  disconnect;
+- display and reset current/maximum in-flight status-request metrics.
+
+Choose the values and press **Apply scenario**. The current payment status is
+refreshed immediately, including after polling has stopped in a terminal state.
+Press Escape or use the labelled close button to return focus to the launcher.
+The controls are absent from the production experience and both development
+control endpoints return 404 when `NODE_ENV=production`.
+
+The HTTP commands below are an advanced, scriptable alternative to the panel.
 
 Create a payment on a multi-confirmation method so every lifecycle state,
 including `confirming`, is compatible with its issued quote:
@@ -115,20 +133,22 @@ curl -sS -X POST http://localhost:3000/api/payments \
   --data '{"order_id":"ORD-88213","currency":"USDT","network":"ethereum"}'
 ```
 
-The deterministic assessment reference is `AQH-100306-PMT`. Pin it to any of
-the eight statuses by replacing `paid` below with `awaiting_payment`, `detected`,
-`confirming`, `paid`, `underpaid`, `overpaid`, `expired`, or `failed`:
+Copy the unique `payment_reference` from the response and replace
+`<PAYMENT_REFERENCE>` below. Each checkout gets its own reference so another
+browser tab or test run cannot replace its quote. Pin it to any of the eight
+statuses by replacing `paid` with `awaiting_payment`, `detected`, `confirming`,
+`paid`, `underpaid`, `overpaid`, `expired`, or `failed`:
 
 ```bash
 curl -sS -X PUT http://localhost:3000/api/dev/scenario \
   -H 'Content-Type: application/json' \
-  --data '{"payment_reference":"AQH-100306-PMT","configuration":{"scenario":{"mode":"exact_state","status":"paid"},"response_delay_ms":0,"failure":{"mode":"none"}}}'
+  --data '{"payment_reference":"<PAYMENT_REFERENCE>","configuration":{"scenario":{"mode":"exact_state","status":"paid"},"response_delay_ms":0,"failure":{"mode":"none"}}}'
 ```
 
 Read the shopper-facing status endpoint:
 
 ```bash
-curl -i http://localhost:3000/api/payments/AQH-100306-PMT
+curl -i 'http://localhost:3000/api/payments/<PAYMENT_REFERENCE>'
 ```
 
 Use deterministic happy-path progression instead of a pinned state:
@@ -136,7 +156,7 @@ Use deterministic happy-path progression instead of a pinned state:
 ```bash
 curl -sS -X PUT http://localhost:3000/api/dev/scenario \
   -H 'Content-Type: application/json' \
-  --data '{"payment_reference":"AQH-100306-PMT","configuration":{"scenario":{"mode":"progression"},"response_delay_ms":0,"failure":{"mode":"none"}}}'
+  --data '{"payment_reference":"<PAYMENT_REFERENCE>","configuration":{"scenario":{"mode":"progression"},"response_delay_ms":0,"failure":{"mode":"none"}}}'
 ```
 
 Each subsequent status request advances through `awaiting_payment`, `detected`,
@@ -168,8 +188,8 @@ with this configuration:
 Inspect or reset the request-concurrency evidence:
 
 ```bash
-curl -sS 'http://localhost:3000/api/dev/requests?payment_reference=AQH-100306-PMT'
-curl -sS -X DELETE 'http://localhost:3000/api/dev/requests?payment_reference=AQH-100306-PMT'
+curl -sS 'http://localhost:3000/api/dev/requests?payment_reference=<PAYMENT_REFERENCE>'
+curl -sS -X DELETE 'http://localhost:3000/api/dev/requests?payment_reference=<PAYMENT_REFERENCE>'
 ```
 
 After pinning the payment to `expired`, request a replacement quote. The
@@ -177,7 +197,7 @@ reference is preserved and every quote-dependent field is replaced together:
 
 ```bash
 curl -sS -X POST \
-  http://localhost:3000/api/payments/AQH-100306-PMT/requote \
+  'http://localhost:3000/api/payments/<PAYMENT_REFERENCE>/requote' \
   -H 'Content-Type: application/json' \
   --data '{"currency":"USDC","network":"polygon"}'
 ```
