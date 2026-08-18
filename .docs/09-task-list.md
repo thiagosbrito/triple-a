@@ -46,13 +46,14 @@ Only the lead agent updates task status. At most one critical-path task may be
 
 ### Next task
 
-`M2-02` — Implement the quote factory and `POST /api/payments` after the
-approved M2-01 commit is created.
+`M2-03` — Implement the payment scenario store and simulator after the approved
+M2-02 slice is committed locally.
 
 Milestone M1 is committed and verified. Contracts, lifecycle presentation,
 exact money handling, deadline reconciliation, polling policy, and all supplied
-PDF fixtures are covered. The candidate approved the M2-01 commit strategy;
-M2-02 is next. Shopper-facing feature work has not started.
+PDF fixtures are covered. M2-01 is committed locally as `5d47f7d`; the candidate
+approved the verified M2-02 commit strategy. Shopper-facing feature work has not
+started.
 
 ## Milestone M0 — Design gates and repository foundation
 
@@ -392,8 +393,8 @@ After schemas/interfaces are frozen by the lead:
 | ID | Task | Depends on | Status | Owner | Acceptance gate / evidence |
 | --- | --- | --- | --- | --- | --- |
 | M2-01 | Implement validated currency fixtures and `GET /api/currencies`. | M1-09 | `DONE` | Lead | Runtime-validated fixture and HTTP route return all six documented combinations; four focused tests, full checks, production build, and live HTTP verification pass. |
-| M2-02 | Implement quote factory and `POST /api/payments`. | M2-01 | `READY` | Unassigned | Relative expiration; consistent amount/network/address; invalid pair problem response. |
-| M2-03 | Implement payment scenario store/simulator. | M1-09 | `BLOCKED` | Unassigned | Exact-state and deterministic progression modes; no UI imports. |
+| M2-02 | Implement quote factory and `POST /api/payments`. | M2-01 | `DONE` | Lead | All six catalog methods produce validated, internally consistent quotes with exact decimal totals and three-minute expiry; malformed or unavailable selections return typed 400 problems; focused/full tests, build, and live HTTP checks pass. |
+| M2-03 | Implement payment scenario store/simulator. | M1-09 | `READY` | Unassigned | Exact-state and deterministic progression modes; no UI imports. |
 | M2-04 | Implement `GET /api/payments/:reference`. | M2-03 | `BLOCKED` | Unassigned | All eight states, delay, one-shot failure, and persistent failure are triggerable. |
 | M2-05 | Implement requote route and 409 behavior. | M2-02, M2-03 | `BLOCKED` | Unassigned | Same reference; complete replacement quote; typed early-requote conflict. |
 | M2-06 | Add development request instrumentation for concurrency evidence. | M2-04 | `BLOCKED` | Unassigned | Tests can observe maximum in-flight polls without production UI coupling. |
@@ -419,6 +420,33 @@ Risks/assumptions: currency names not enumerated in the PDF table use the
                    conventional display values USD Coin and Ether; the fixture
                    is validated at module initialization and remains mock-only
 Next: M2-02
+```
+
+### M2-02 evidence
+
+```text
+Task: M2-02
+Status: DONE
+Owner: Lead
+Files: src/mocks/quote-factory.ts and focused test;
+       src/app/api/payments/route.ts and focused test;
+       generic bad-request problem contract and focused test;
+       architecture, execution, and discussion documentation
+Checks: pnpm exec vitest run <problem, factory, and route tests>;
+        pnpm typecheck; live POST http://127.0.0.1:3100/api/payments for 201
+        and 400 paths; pnpm check; pnpm build; git diff --check
+Results: 29 focused tests and all 177 repository tests passed; live endpoint
+         returned HTTP 201 application/json with exact three-minute expiry and
+         HTTP 400 application/problem+json for an unavailable pair; production
+         build includes dynamic /api/payments route
+Requirements: PR-03; PR-04; FR-03; FR-04; M2-02 acceptance gate
+Risks/assumptions: five non-PDF method profiles use clearly synthetic,
+                   deterministic mock addresses; the PDF USDT/Tron profile is
+                   preserved exactly; host Node remains 24.16.0 versus the
+                   repository-pinned 24.18.0 and all verification passed on
+                   the same Node 24 major
+Commit strategy: approved by the candidate on 2026-08-18
+Next: M2-03
 ```
 
 ### M2 safe parallelism

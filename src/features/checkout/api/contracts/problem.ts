@@ -3,16 +3,30 @@ import { z } from "zod";
 import { nonBlankProtocolStringSchema } from "./primitives";
 
 export const PROBLEM_TYPES = [
+  "about:blank",
   "https://developers.triple-a.io/errors/quote-not-expired",
 ] as const;
 
-// Opaque problem-type identifier copied from the assessment fixture. It is not
-// a client-side documentation link or a resource the checkout should fetch.
+// The Triple-A URI is an opaque identifier copied from the assessment fixture,
+// not a client-side help link. `about:blank` is the standard generic problem
+// type for mock request errors that have no supplied application-specific URI.
 
 export type ProblemType = (typeof PROBLEM_TYPES)[number];
 
 export const problemTypeSchema = z.enum(PROBLEM_TYPES);
-export const QUOTE_NOT_EXPIRED_PROBLEM_TYPE = PROBLEM_TYPES[0];
+export const BAD_REQUEST_PROBLEM_TYPE = PROBLEM_TYPES[0];
+export const QUOTE_NOT_EXPIRED_PROBLEM_TYPE = PROBLEM_TYPES[1];
+
+export const BAD_REQUEST_PROBLEM_TITLE = "Bad Request";
+
+export const badRequestProblemSchema = z.strictObject({
+  type: z.literal(BAD_REQUEST_PROBLEM_TYPE),
+  title: z.literal(BAD_REQUEST_PROBLEM_TITLE),
+  status: z.literal(400),
+  detail: nonBlankProtocolStringSchema,
+});
+
+export type BadRequestProblem = z.infer<typeof badRequestProblemSchema>;
 
 export const QUOTE_NOT_EXPIRED_PROBLEM_TITLE = "Quote has not expired";
 
@@ -26,6 +40,8 @@ export const quoteNotExpiredProblemSchema = z.strictObject({
 export type QuoteNotExpiredProblem = z.infer<
   typeof quoteNotExpiredProblemSchema
 >;
+
+export type KnownApiProblem = BadRequestProblem | QuoteNotExpiredProblem;
 
 export const API_OPERATIONS = [
   "get_currencies",
@@ -45,7 +61,7 @@ export const apiErrorKindSchema = z.enum(API_ERROR_KINDS);
 export const API_ERROR_KIND = apiErrorKindSchema.enum;
 
 export class ApiProblemError<
-  TProblem extends QuoteNotExpiredProblem = QuoteNotExpiredProblem,
+  TProblem extends KnownApiProblem = KnownApiProblem,
 > extends Error {
   readonly kind = API_ERROR_KIND.api_problem;
 

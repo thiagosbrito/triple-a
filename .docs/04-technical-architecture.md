@@ -280,8 +280,10 @@ Responsibilities:
 - Validate `order_id`, `currency`, and `network`.
 - Reject unsupported combinations with `application/problem+json`.
 - Return an internally consistent payment and quote.
-- Generate `expires_at` relative to request time so the checked-in fixture does
-  not already appear expired.
+- Generate `expires_at` three minutes after request time so the checked-in
+  fixture does not already appear expired and manual testing remains practical.
+  Later development controls may trigger expiry immediately without changing
+  the production countdown policy.
 
 Client policy:
 

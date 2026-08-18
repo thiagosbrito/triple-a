@@ -5,11 +5,49 @@ import { PAYMENT_STATUS } from "./payment-status-values";
 import {
   ApiProblemError,
   API_OPERATION,
+  BAD_REQUEST_PROBLEM_TITLE,
+  BAD_REQUEST_PROBLEM_TYPE,
   QUOTE_NOT_EXPIRED_PROBLEM_TYPE,
   ProtocolError,
+  badRequestProblemSchema,
   quoteNotExpiredProblemSchema,
   type CheckoutContractError,
 } from "./problem";
+
+describe("badRequestProblemSchema", () => {
+  it("validates a generic RFC problem without inventing a help URI", () => {
+    expect(
+      badRequestProblemSchema.parse({
+        type: BAD_REQUEST_PROBLEM_TYPE,
+        title: BAD_REQUEST_PROBLEM_TITLE,
+        status: 400,
+        detail: "The selected payment method is not available.",
+      }),
+    ).toEqual({
+      type: "about:blank",
+      title: "Bad Request",
+      status: 400,
+      detail: "The selected payment method is not available.",
+    });
+  });
+
+  it.each([
+    ["a custom title", { title: "Unsupported payment method" }],
+    ["a mismatched status", { status: 422 }],
+    ["a blank detail", { detail: "" }],
+    ["an unknown field", { error_code: "unsupported_method" }],
+  ])("rejects %s", (_caseName, override) => {
+    expect(
+      badRequestProblemSchema.safeParse({
+        type: BAD_REQUEST_PROBLEM_TYPE,
+        title: BAD_REQUEST_PROBLEM_TITLE,
+        status: 400,
+        detail: "The request is invalid.",
+        ...override,
+      }).success,
+    ).toBe(false);
+  });
+});
 
 const documentedQuoteNotExpiredProblem = {
   type: "https://developers.triple-a.io/errors/quote-not-expired",

@@ -619,3 +619,29 @@ build, and a temporary live-server request passed. The live endpoint returned
 HTTP 200 with `application/json` and all six combinations. The temporary server
 was then stopped. The candidate reviewed and approved the focused M2-01 commit
 strategy before its creation; M2-02 follows after that local-only commit.
+
+## 2026-08-18 - M2-02 three-minute quote lifetime
+
+The candidate selected an exact three-minute mock quote lifetime to keep manual
+testing practical. The later development scenario panel will provide an
+immediate expiry trigger alongside status controls, matching the previously
+prompted design direction. That control will alter mock state rather than
+shortening or bypassing the production countdown algorithm.
+
+The remaining accepted M2-02 policy uses deterministic per-method quote
+profiles, catalog-owned network metadata, exact decimal addition for total due,
+and a generic HTTP 400 `application/problem+json` response with `about:blank`
+for malformed requests or unsupported currency/network pairs.
+
+The implementation preserves the exact documented USDT/Tron quote and uses
+distinct, clearly synthetic profiles for the other catalog methods. Focused
+tests, all 177 repository tests, strict TypeScript, linting, formatting, the
+production build, and live HTTP success/error requests passed. The live quote
+expired exactly three minutes after creation. The host still reports Node
+24.16.0 against the repository's declared minimum of 24.18.0; no verification
+failure resulted. Per the candidate's process, no commit will be created until
+the focused M2-02 commit strategy is reviewed and approved.
+
+The candidate approved the proposed focused commit by directing work to
+continue. M2-02 can therefore close without mixing the scenario simulator or
+development-panel behavior into the quote-creation slice.
