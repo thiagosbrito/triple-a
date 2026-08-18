@@ -183,6 +183,57 @@ function assertCreatedPaymentMatchesRequest(
   return response;
 }
 
+function assertPaymentStatusMatchesReference(
+  response: PaymentStatusUpdate,
+  reference: PaymentReference,
+): PaymentStatusUpdate {
+  if (response.payment_reference !== reference) {
+    throw new ProtocolError("get_payment", [
+      {
+        message: "Payment status does not match the requested reference",
+        path: ["payment_reference"],
+      },
+    ]);
+  }
+
+  return response;
+}
+
+function assertRequotedPaymentMatchesRequest(
+  response: RequotePaymentResponse,
+  reference: PaymentReference,
+  request: RequotePaymentRequest,
+): RequotePaymentResponse {
+  const issues = [];
+
+  if (response.payment_reference !== reference) {
+    issues.push({
+      message: "Requote does not match the requested payment reference",
+      path: ["payment_reference"],
+    });
+  }
+
+  if (response.quote.crypto_currency !== request.currency) {
+    issues.push({
+      message: "Requote currency does not match the requested currency",
+      path: ["quote", "crypto_currency"],
+    });
+  }
+
+  if (response.quote.network !== request.network) {
+    issues.push({
+      message: "Requote network does not match the requested network",
+      path: ["quote", "network"],
+    });
+  }
+
+  if (issues.length > 0) {
+    throw new ProtocolError("requote_payment", issues);
+  }
+
+  return response;
+}
+
 function jsonRequestInit(
   method: "POST",
   body: unknown,
@@ -239,10 +290,10 @@ export function createCheckoutApi(
       return assertCreatedPaymentMatchesRequest(response, body);
     },
 
-    getPayment(reference, requestOptions) {
+    async getPayment(reference, requestOptions) {
       const validReference = paymentReferenceSchema.parse(reference);
 
-      return requestJson({
+      const response = await requestJson({
         fetch: fetcher,
         operation: "get_payment",
         path: `/api/payments/${encodeURIComponent(validReference)}`,
@@ -250,13 +301,15 @@ export function createCheckoutApi(
         responseSchema: paymentStatusUpdateSchema,
         init: getRequestInit(requestOptions),
       });
+
+      return assertPaymentStatusMatchesReference(response, validReference);
     },
 
-    requotePayment(reference, request, requestOptions) {
+    async requotePayment(reference, request, requestOptions) {
       const validReference = paymentReferenceSchema.parse(reference);
       const body = requotePaymentRequestSchema.parse(request);
 
-      return requestJson({
+      const response = await requestJson({
         fetch: fetcher,
         operation: "requote_payment",
         path: `/api/payments/${encodeURIComponent(validReference)}/requote`,
@@ -264,6 +317,12 @@ export function createCheckoutApi(
         responseSchema: requotePaymentResponseSchema,
         init: jsonRequestInit("POST", body, requestOptions),
       });
+
+      return assertRequotedPaymentMatchesRequest(
+        response,
+        validReference,
+        body,
+      );
     },
   };
 }

@@ -174,6 +174,25 @@ describe("checkout API", () => {
     await expect(result).rejects.toBeInstanceOf(ProtocolError);
   });
 
+  it("rejects a valid status response for a different payment reference", async () => {
+    const fetcher = vi.fn<typeof fetch>();
+    fetcher.mockResolvedValue(
+      jsonResponse({
+        payment_reference: "AQH-DIFFERENT-PMT",
+        status: "awaiting_payment",
+      }),
+    );
+    const api = createCheckoutApi({ fetch: fetcher });
+
+    await expect(
+      api.getPayment(payment.payment_reference),
+    ).rejects.toMatchObject({
+      kind: "protocol_error",
+      operation: "get_payment",
+      issues: [expect.objectContaining({ path: ["payment_reference"] })],
+    });
+  });
+
   it("rejects a malformed success payload instead of leaking untrusted data", async () => {
     const fetcher = vi.fn<typeof fetch>();
     fetcher.mockResolvedValue(jsonResponse({ currencies: [] }));
@@ -212,6 +231,42 @@ describe("checkout API", () => {
       kind: "protocol_error",
       operation: "create_payment",
       issues: expect.arrayContaining([
+        expect.objectContaining({ path: ["quote", "crypto_currency"] }),
+        expect.objectContaining({ path: ["quote", "network"] }),
+      ]),
+    });
+  });
+
+  it("rejects a requote for a different reference or payment method", async () => {
+    const fetcher = vi.fn<typeof fetch>();
+    fetcher.mockResolvedValue(
+      jsonResponse(
+        {
+          ...payment,
+          payment_reference: "AQH-DIFFERENT-PMT",
+          quote: {
+            ...payment.quote,
+            crypto_currency: "USDC",
+            network: "polygon",
+            network_name: "Polygon",
+          },
+        },
+        201,
+      ),
+    );
+    const api = createCheckoutApi({ fetch: fetcher });
+    const request = requotePaymentRequestSchema.parse({
+      currency: "USDT",
+      network: "tron",
+    });
+
+    await expect(
+      api.requotePayment(payment.payment_reference, request),
+    ).rejects.toMatchObject({
+      kind: "protocol_error",
+      operation: "requote_payment",
+      issues: expect.arrayContaining([
+        expect.objectContaining({ path: ["payment_reference"] }),
         expect.objectContaining({ path: ["quote", "crypto_currency"] }),
         expect.objectContaining({ path: ["quote", "network"] }),
       ]),

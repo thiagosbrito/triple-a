@@ -15,6 +15,12 @@ describe("checkout query keys", () => {
       "payments",
       "AQH-100306-PMT",
     ]);
+    expect(checkoutQueryKeys.paymentStatus(reference)).toEqual([
+      "checkout",
+      "payments",
+      "AQH-100306-PMT",
+      "status",
+    ]);
   });
 
   it("gives different payment references different cache identities", () => {
@@ -27,10 +33,18 @@ describe("checkout query keys", () => {
   });
 
   it("keeps mutation identity separate from payment-reference query keys", () => {
+    const reference = paymentReferenceSchema.parse("AQH-100306-PMT");
+
     expect(checkoutMutationKeys.createPayment()).toEqual([
       "checkout",
       "mutations",
       "create-payment",
+    ]);
+    expect(checkoutMutationKeys.requotePayment(reference)).toEqual([
+      "checkout",
+      "mutations",
+      "requote-payment",
+      "AQH-100306-PMT",
     ]);
   });
 });

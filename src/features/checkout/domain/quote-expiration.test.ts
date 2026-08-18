@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { isoTimestampSchema } from "../api/contracts/primitives";
 import {
+  formatRemainingMilliseconds,
   getQuoteDeadlineState,
   getRemainingMilliseconds,
 } from "./quote-expiration";
@@ -32,6 +33,26 @@ describe("quote expiration", () => {
       getRemainingMilliseconds(expiresAt, expiryEpochMilliseconds + 60_000),
     ).toBe(0);
   });
+
+  it.each([
+    [0, "00:00"],
+    [1, "00:01"],
+    [59_001, "01:00"],
+    [65_000, "01:05"],
+    [3_600_000, "01:00:00"],
+  ])(
+    "formats %i milliseconds without showing zero early",
+    (value, expected) => {
+      expect(formatRemainingMilliseconds(value)).toBe(expected);
+    },
+  );
+
+  it.each([-1, Number.NaN, Number.POSITIVE_INFINITY])(
+    "rejects invalid remaining time %s",
+    (value) => {
+      expect(() => formatRemainingMilliseconds(value)).toThrow(RangeError);
+    },
+  );
 
   it("requests exactly one reconciliation before local expiry", () => {
     expect(
