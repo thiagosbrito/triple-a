@@ -161,6 +161,67 @@ describe("useDeadlineReconciliation polling", () => {
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
 
+  it("preserves detected funds through retries and recovers on a later poll", async () => {
+    const detected = createPaymentStatusUpdate(
+      payment,
+      PAYMENT_STATUS.detected,
+      START,
+    );
+    const confirming = createPaymentStatusUpdate(
+      payment,
+      PAYMENT_STATUS.confirming,
+      START,
+    );
+    let requestCount = 0;
+    const fetcher = vi.spyOn(globalThis, "fetch").mockImplementation(() => {
+      requestCount += 1;
+
+      if (requestCount === 1) {
+        return Promise.resolve(responseFor(detected));
+      }
+
+      if (requestCount <= 5) {
+        return Promise.reject(new TypeError("offline"));
+      }
+
+      return Promise.resolve(responseFor(confirming));
+    });
+    const client = queryClient();
+    renderHook(() => useDeadlineReconciliation(payment, 6), {
+      wrapper: wrapper(client),
+    });
+    const statusKey = checkoutQueryKeys.paymentStatus(
+      payment.payment_reference,
+    );
+
+    await advance(0);
+    expect(client.getQueryData<PaymentStatusUpdate>(statusKey)?.status).toBe(
+      PAYMENT_STATUS.detected,
+    );
+
+    await advance(1_500);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(client.getQueryData<PaymentStatusUpdate>(statusKey)?.status).toBe(
+      PAYMENT_STATUS.detected,
+    );
+
+    await advance(1_000);
+    await advance(2_000);
+    await advance(4_000);
+    expect(fetcher).toHaveBeenCalledTimes(5);
+    expect(client.getQueryState(statusKey)?.status).toBe("error");
+    expect(client.getQueryData<PaymentStatusUpdate>(statusKey)?.status).toBe(
+      PAYMENT_STATUS.detected,
+    );
+
+    await advance(1_500);
+    await flushResponse();
+    expect(fetcher).toHaveBeenCalledTimes(6);
+    expect(client.getQueryData<PaymentStatusUpdate>(statusKey)?.status).toBe(
+      PAYMENT_STATUS.confirming,
+    );
+  });
+
   it("aborts the obsolete request when the payment reference changes", async () => {
     const signals: AbortSignal[] = [];
     const fetcher = vi.spyOn(globalThis, "fetch").mockImplementation(

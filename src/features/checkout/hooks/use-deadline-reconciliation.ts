@@ -10,6 +10,10 @@ import type { PaymentStatusUpdate } from "../api/contracts/payment-status";
 import { PAYMENT_STATUS } from "../api/contracts/payment-status-values";
 import type { CreatePaymentResponse } from "../api/contracts/payments";
 import { getPaymentPollInterval } from "../domain/payment-polling";
+import {
+  getPaymentStatusRetryDelay,
+  shouldRetryPaymentStatus,
+} from "../domain/payment-status-retry";
 import { useQuoteCountdown } from "./use-quote-countdown";
 
 export type DeadlineReconciliationPhase =
@@ -45,7 +49,8 @@ export function useDeadlineReconciliation(
       reconciliation.phase === "locally_expired"
         ? false
         : getPaymentPollInterval(query.state.data),
-    retry: false,
+    retry: shouldRetryPaymentStatus,
+    retryDelay: getPaymentStatusRetryDelay,
   });
   const countdown = useQuoteCountdown(
     payment.quote.expires_at,
@@ -115,5 +120,12 @@ export function useDeadlineReconciliation(
     ...countdown,
     phase,
     statusUpdate,
+    transport: {
+      error: statusQuery.error,
+      failureCount: statusQuery.failureCount,
+      isError: statusQuery.isError,
+      isFetching: statusQuery.isFetching,
+      refetch: statusQuery.refetch,
+    },
   } as const;
 }

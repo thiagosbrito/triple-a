@@ -7,6 +7,7 @@ import type { CheckoutSession } from "../config/checkout-session";
 import { useDeadlineReconciliation } from "../hooks/use-deadline-reconciliation";
 import { useRequotePayment } from "../hooks/use-requote-payment";
 import { PaymentInstructions } from "./payment-instructions";
+import { PaymentConnectivityNotice } from "./payment-connectivity-notice";
 import { PaymentMethodCommitment } from "./payment-method-commitment";
 import { PaymentOutcomeStatus } from "./payment-outcome-status";
 import { PaymentProgressStatus } from "./payment-progress-status";
@@ -31,6 +32,17 @@ export function IssuedPaymentFlow({
     remainingMilliseconds: deadline.remainingMilliseconds,
     isAtDeadline: deadline.isAtDeadline,
   } as const;
+  const connectivityNotice = (
+    <PaymentConnectivityNotice
+      error={deadline.transport.error}
+      failureCount={deadline.transport.failureCount}
+      isError={deadline.transport.isError}
+      isFetching={deadline.transport.isFetching}
+      onRetry={() => {
+        void deadline.transport.refetch({ cancelRefetch: false });
+      }}
+    />
+  );
 
   if (deadline.phase === "active") {
     return (
@@ -44,6 +56,7 @@ export function IssuedPaymentFlow({
           assetDecimals={assetDecimals}
           countdown={countdown}
         />
+        {connectivityNotice}
       </>
     );
   }
@@ -115,6 +128,8 @@ export function IssuedPaymentFlow({
           ) : null}
         </>
       ) : null}
+
+      {deadline.phase !== "unavailable" ? connectivityNotice : null}
     </div>
   );
 }

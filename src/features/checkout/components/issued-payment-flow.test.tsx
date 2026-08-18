@@ -387,8 +387,11 @@ describe("IssuedPaymentFlow deadline reconciliation", () => {
 
     await flushImmediateRequest();
     await reachDeadline();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(6_000);
+    });
 
-    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(fetcher).toHaveBeenCalledTimes(4);
     const alert = screen.getByRole("alert");
     expect(alert).toHaveTextContent("Payment status could not be confirmed");
     expect(alert).toHaveTextContent("do not assume the quote expired");
