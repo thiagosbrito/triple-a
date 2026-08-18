@@ -218,10 +218,25 @@ export class PaymentScenarioStore {
 
 type ScenarioStoreGlobal = typeof globalThis & {
   __tripleAStablecoinPaymentScenarioStore?: PaymentScenarioStore;
+  __tripleAStablecoinPaymentScenarioStoreVersion?: number;
 };
 
+// Next.js preserves `globalThis` across development hot reloads. Version the
+// singleton's runtime shape so a refreshed module never reuses an instance
+// created before a newly added store method existed.
+const PAYMENT_SCENARIO_STORE_VERSION = 3;
 const scenarioStoreGlobal = globalThis as ScenarioStoreGlobal;
 
+if (
+  !scenarioStoreGlobal.__tripleAStablecoinPaymentScenarioStore ||
+  scenarioStoreGlobal.__tripleAStablecoinPaymentScenarioStoreVersion !==
+    PAYMENT_SCENARIO_STORE_VERSION
+) {
+  scenarioStoreGlobal.__tripleAStablecoinPaymentScenarioStore =
+    new PaymentScenarioStore();
+  scenarioStoreGlobal.__tripleAStablecoinPaymentScenarioStoreVersion =
+    PAYMENT_SCENARIO_STORE_VERSION;
+}
+
 export const paymentScenarioStore =
-  (scenarioStoreGlobal.__tripleAStablecoinPaymentScenarioStore ??=
-    new PaymentScenarioStore());
+  scenarioStoreGlobal.__tripleAStablecoinPaymentScenarioStore;

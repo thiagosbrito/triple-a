@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   MAX_SCENARIO_DELAY_MILLISECONDS,
@@ -278,6 +278,30 @@ describe("paymentScenarioConfigurationSchema", () => {
   ])("rejects %s", (_caseName, input) => {
     expect(paymentScenarioConfigurationSchema.safeParse(input).success).toBe(
       false,
+    );
+  });
+});
+
+describe("paymentScenarioStore development singleton", () => {
+  it("replaces an obsolete version after a module reload", async () => {
+    const obsoleteStore = {};
+    Reflect.set(
+      globalThis,
+      "__tripleAStablecoinPaymentScenarioStore",
+      obsoleteStore,
+    );
+    Reflect.set(
+      globalThis,
+      "__tripleAStablecoinPaymentScenarioStoreVersion",
+      2,
+    );
+    vi.resetModules();
+
+    const reloadedModule = await import("./scenario-store");
+
+    expect(reloadedModule.paymentScenarioStore).not.toBe(obsoleteStore);
+    expect(reloadedModule.paymentScenarioStore.setQuoteExpiry).toBeTypeOf(
+      "function",
     );
   });
 });
