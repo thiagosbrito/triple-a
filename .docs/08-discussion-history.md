@@ -588,3 +588,34 @@ to awaiting. A strict requote request schema and shared success-response schema
 were added with exact and malformed fixture tests. The complete contract suite
 then passed 82 tests, and the integrated repository passed 157 tests plus the
 production Next.js build.
+
+## 2026-08-18 - M1 domain milestone committed
+
+The complete contract and pure-domain slice passed formatting, ESLint, strict
+TypeScript, 157 Vitest tests, the production Next.js build, and a dependency
+audit with no advisories. It was committed locally as `d5f978c` (`feat:
+establish checkout contracts and domain core`). No remote push was performed.
+
+The candidate paused work before M2. M2-01 remains the next ready implementation
+boundary—the validated currency fixture and `GET /api/currencies` route—but no
+mock API or shopper-facing feature work has started.
+
+## 2026-08-18 - M2 resumed
+
+The candidate explicitly resumed work after the pause before M2. M2-01 moved
+into progress with the lead owning the validated currency fixture, the
+`GET /api/currencies` route handler, focused tests, and execution evidence.
+
+## 2026-08-18 - M2-01 validated currency endpoint
+
+The deterministic mock catalog contains every documented currency/network
+combination and validates itself through the production-facing Zod response
+schema when the fixture module loads. The App Router handler uses the native
+Web `Response.json` API documented by the installed Next.js 16.3.1 runtime; no
+framework wrapper, cache override, or new dependency was needed.
+
+Focused fixture and route tests, the full repository gate, the production
+build, and a temporary live-server request passed. The live endpoint returned
+HTTP 200 with `application/json` and all six combinations. The temporary server
+was then stopped. The candidate reviewed and approved the focused M2-01 commit
+strategy before its creation; M2-02 follows after that local-only commit.

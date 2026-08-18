@@ -42,17 +42,17 @@ Only the lead agent updates task status. At most one critical-path task may be
 
 ## Current milestone
 
-**Milestone M1 in progress — contracts and domain core.**
+**Milestone M2 in progress — deterministic mock API.**
 
 ### Next task
 
-`M1-09` — Integrate and commit the domain slice.
+`M2-02` — Implement the quote factory and `POST /api/payments` after the
+approved M2-01 commit is created.
 
-The candidate resumed implementation on 2026-08-18. Transport contracts, error
-taxonomy, exhaustive lifecycle presentation, and the exact decimal domain are
-verified. The complete PDF fixture audit, expiration policy, polling policy,
-full quality gate, and production build pass; integration review is active.
-Mock routes and shopper-facing feature work have not started.
+Milestone M1 is committed and verified. Contracts, lifecycle presentation,
+exact money handling, deadline reconciliation, polling policy, and all supplied
+PDF fixtures are covered. The candidate approved the M2-01 commit strategy;
+M2-02 is next. Shopper-facing feature work has not started.
 
 ## Milestone M0 — Design gates and repository foundation
 
@@ -163,7 +163,7 @@ Next: M1-01
 | M1-06 | Implement decimal parsing, validation, arithmetic, and formatting. | M0-10 | `DONE` | Lead | Twenty-one focused tests cover catalog-defined scale, exact arithmetic, deliberate trailing-zero handling, and plain formatting without floats or scientific notation. |
 | M1-07 | Implement pure expiration and polling-policy functions. | M1-03 | `DONE` | Lead | Thirty-two focused tests cover absolute deadlines, zero-time reconciliation, status-specific intervals, terminal stopping, and bounded retry/backoff. |
 | M1-08 | Validate assessment fixtures against runtime contracts. | M1-01..M1-07 | `DONE` | Lead | Visual/text PDF audit and 82 contract tests cover every supplied success/problem fixture, malformed payloads, and unknown status; missing requote request coverage was added. |
-| M1-09 | Integrate and commit the domain slice. | M1-08 | `IN_PROGRESS` | Lead | Full checks pass; docs reflect any changed assumptions. |
+| M1-09 | Integrate and commit the domain slice. | M1-08 | `DONE` | Lead | Commit `d5f978c` contains the verified M1 contracts, domain policies, tests, dependency pins, and aligned documentation. |
 
 ### M1-01 evidence
 
@@ -360,6 +360,23 @@ Risks/assumptions: strict object policy targets the fixed assessment mock;
 Next: M1-09
 ```
 
+### M1-09 evidence
+
+```text
+Task: M1-09
+Status: DONE
+Owner: Lead
+Files: complete M1 contract/domain slice, exact dependency pins, AGENTS.md,
+       architecture, open questions, discussion history, and execution tracker
+Checks: pnpm check; pnpm build; pnpm audit --json; git diff --cached --check
+Results: 12 test files and 157 tests passed; production Next.js build passed;
+         0 dependency advisories; staged diff check passed
+Commit: d5f978c feat: establish checkout contracts and domain core
+Risks/assumptions: host Node remains 24.16.0 versus the repository-pinned
+                   24.18.0; all verification passed on the same Node 24 major
+Next: M2-01
+```
+
 ### M1 safe parallelism
 
 After schemas/interfaces are frozen by the lead:
@@ -374,13 +391,35 @@ After schemas/interfaces are frozen by the lead:
 
 | ID | Task | Depends on | Status | Owner | Acceptance gate / evidence |
 | --- | --- | --- | --- | --- | --- |
-| M2-01 | Implement validated currency fixtures and `GET /api/currencies`. | M1-09 | `BLOCKED` | Unassigned | Contract-correct response includes every combination. |
-| M2-02 | Implement quote factory and `POST /api/payments`. | M2-01 | `BLOCKED` | Unassigned | Relative expiration; consistent amount/network/address; invalid pair problem response. |
+| M2-01 | Implement validated currency fixtures and `GET /api/currencies`. | M1-09 | `DONE` | Lead | Runtime-validated fixture and HTTP route return all six documented combinations; four focused tests, full checks, production build, and live HTTP verification pass. |
+| M2-02 | Implement quote factory and `POST /api/payments`. | M2-01 | `READY` | Unassigned | Relative expiration; consistent amount/network/address; invalid pair problem response. |
 | M2-03 | Implement payment scenario store/simulator. | M1-09 | `BLOCKED` | Unassigned | Exact-state and deterministic progression modes; no UI imports. |
 | M2-04 | Implement `GET /api/payments/:reference`. | M2-03 | `BLOCKED` | Unassigned | All eight states, delay, one-shot failure, and persistent failure are triggerable. |
 | M2-05 | Implement requote route and 409 behavior. | M2-02, M2-03 | `BLOCKED` | Unassigned | Same reference; complete replacement quote; typed early-requote conflict. |
 | M2-06 | Add development request instrumentation for concurrency evidence. | M2-04 | `BLOCKED` | Unassigned | Tests can observe maximum in-flight polls without production UI coupling. |
 | M2-07 | Add route/contract integration tests and commit. | M2-01..M2-06 | `BLOCKED` | Lead | Every assessment condition is reachable through HTTP. |
+
+### M2-01 evidence
+
+```text
+Task: M2-01
+Status: DONE
+Owner: Lead
+Files: src/mocks/fixtures/currencies.ts and focused test;
+       src/app/api/currencies/route.ts and focused test;
+       execution and discussion documentation
+Checks: pnpm exec vitest run <fixture and route tests>; pnpm typecheck;
+        live GET http://127.0.0.1:3000/api/currencies; pnpm check;
+        pnpm build; git diff --check
+Results: 4 focused tests and all 161 repository tests passed; live endpoint
+         returned HTTP 200 application/json with all six combinations;
+         production build includes dynamic /api/currencies route
+Requirements: PR-02; M2-01 acceptance gate
+Risks/assumptions: currency names not enumerated in the PDF table use the
+                   conventional display values USD Coin and Ether; the fixture
+                   is validated at module initialization and remains mock-only
+Next: M2-02
+```
 
 ### M2 safe parallelism
 
