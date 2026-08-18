@@ -12,7 +12,9 @@ import {
 } from "@/features/checkout/api/contracts/payments";
 import {
   cryptoAddressSchema,
+  paymentReferenceSchema,
   positiveDecimalStringSchema,
+  type PaymentReference,
 } from "@/features/checkout/api/contracts/primitives";
 import {
   addDecimalAmounts,
@@ -95,6 +97,9 @@ function fractionDigits(value: string): number {
 export function createMockPayment(
   request: CreatePaymentRequest,
   now = new Date(),
+  paymentReference: PaymentReference = paymentReferenceSchema.parse(
+    MOCK_PAYMENT_REFERENCE,
+  ),
 ): CreatePaymentResponse {
   if (!isPaymentMethodSupported(CURRENCIES_FIXTURE, request)) {
     throw new UnsupportedPaymentMethodError(request.currency, request.network);
@@ -128,7 +133,7 @@ export function createMockPayment(
   );
 
   return createPaymentResponseSchema.parse({
-    payment_reference: MOCK_PAYMENT_REFERENCE,
+    payment_reference: paymentReference,
     order_id: request.order_id,
     status: PAYMENT_STATUS.awaiting_payment,
     merchant: CHECKOUT_SESSION.merchant,

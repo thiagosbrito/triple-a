@@ -11,6 +11,7 @@ import {
   createMockPayment,
   UnsupportedPaymentMethodError,
 } from "@/mocks/quote-factory";
+import { createUniqueMockPaymentReference } from "@/mocks/payment-reference-factory";
 import { paymentScenarioStore } from "@/mocks/scenario-store";
 
 const INVALID_REQUEST_DETAIL =
@@ -63,7 +64,11 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   try {
-    const payment = createMockPayment(parsedRequest.data);
+    const payment = createMockPayment(
+      parsedRequest.data,
+      new Date(),
+      createUniqueMockPaymentReference(),
+    );
     paymentScenarioStore.registerPayment(payment);
 
     return Response.json(payment, {

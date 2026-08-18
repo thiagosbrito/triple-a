@@ -4,6 +4,8 @@ import { createPaymentResponseSchema } from "@/features/checkout/api/contracts/p
 import { badRequestProblemSchema } from "@/features/checkout/api/contracts/problem";
 import { paymentScenarioStore } from "@/mocks/scenario-store";
 
+import { POST as REQUOTE } from "./[reference]/requote/route";
+
 import { POST } from "./route";
 
 function paymentRequest(body: string): Request {
@@ -12,6 +14,16 @@ function paymentRequest(body: string): Request {
     headers: { "Content-Type": "application/json" },
     body,
   });
+}
+
+function validPaymentRequest(): Request {
+  return paymentRequest(
+    JSON.stringify({
+      order_id: "ORD-88213",
+      currency: "USDT",
+      network: "tron",
+    }),
+  );
 }
 
 beforeEach(() => {
@@ -55,6 +67,43 @@ describe("POST /api/payments", () => {
       outcome: "response",
       update: { status: "awaiting_payment" },
     });
+  });
+
+  it("keeps simultaneous checkout sessions isolated by payment reference", async () => {
+    vi.useFakeTimers();
+    const firstCreatedAt = new Date("2026-08-14T08:49:10.842Z");
+    vi.setSystemTime(firstCreatedAt);
+    const first = createPaymentResponseSchema.parse(
+      await (await POST(validPaymentRequest())).json(),
+    );
+
+    vi.setSystemTime(new Date(firstCreatedAt.getTime() + 60_000));
+    const second = createPaymentResponseSchema.parse(
+      await (await POST(validPaymentRequest())).json(),
+    );
+
+    expect(second.payment_reference).not.toBe(first.payment_reference);
+    expect(paymentScenarioStore.has(first.payment_reference)).toBe(true);
+    expect(paymentScenarioStore.has(second.payment_reference)).toBe(true);
+
+    vi.setSystemTime(new Date(first.quote.expires_at));
+    const requoteResponse = await REQUOTE(
+      new Request(
+        `http://localhost/api/payments/${first.payment_reference}/requote`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ currency: "USDC", network: "polygon" }),
+        },
+      ),
+      { params: Promise.resolve({ reference: first.payment_reference }) },
+    );
+
+    expect(requoteResponse.status).toBe(201);
+    expect(
+      paymentScenarioStore.getPayment(second.payment_reference).quote
+        .expires_at,
+    ).toBe(second.quote.expires_at);
   });
 
   it.each([
