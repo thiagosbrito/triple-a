@@ -678,3 +678,24 @@ with intervention required only for a genuine blocker. This approves the
 reported focused M2-03 commit strategy and the lead may continue through the
 remaining M2 tasks while still announcing commit boundaries and avoiding any
 remote push.
+
+## 2026-08-18 - M2-04 controllable status HTTP route
+
+M2-04 added the dynamic payment-status handler plus the development-only
+scenario configuration endpoint required by the future evaluator panel. Route
+parameters, control bodies, status bodies, and generic 404/500 problems are
+validated. Exact states, delay, one-shot failure, persistent failure, and the
+network-disconnect instruction all pass through the same payment-status HTTP
+endpoint the shopper client will use.
+
+Live Next.js verification proved that the payment-creation, development-control,
+and status route bundles share the process-global store. A configured 250 ms
+HTTP failure returned in approximately 261 ms and the next request recovered to
+the unchanged detected state in approximately 259 ms. The disconnect scenario
+gave curl an empty reply with exit code 52 while Next logged the intentionally
+errored response stream. The temporary server was stopped afterward.
+
+The full repository gate passed with 20 test files and 235 tests, and the
+production build contains the dynamic status and development-control routes.
+The development endpoint returns 404 when `NODE_ENV` is production. The host
+Node engine warning remains unchanged.

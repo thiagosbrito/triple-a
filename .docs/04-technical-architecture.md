@@ -459,6 +459,13 @@ Scenario controls must be visibly marked development-only and must exercise the
 same HTTP endpoints as normal behavior. They must not set React query data
 directly.
 
+`GET` and `PUT /api/dev/scenario` expose the validated configuration for the
+later development panel and automated HTTP checks. They are available only when
+`NODE_ENV` is not `production`, use no-store responses, and require a registered
+payment reference. The status route models a network disconnect with an errored
+response stream; real Next.js verification produces an empty client reply and
+an expected server-side pipe error rather than a lifecycle payload.
+
 ## Accessibility requirements
 
 - Semantic headings reflect the page and status hierarchy.

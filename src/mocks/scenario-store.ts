@@ -10,6 +10,7 @@ import {
   createPaymentResponseSchema,
   type CreatePaymentResponse,
 } from "@/features/checkout/api/contracts/payments";
+import { paymentReferenceSchema } from "@/features/checkout/api/contracts/primitives";
 import {
   createPaymentStatusUpdate,
   getHappyPathStatuses,
@@ -53,10 +54,24 @@ export const paymentScenarioConfigurationSchema = z.strictObject({
   failure: transportFailureSchema,
 });
 
+export const paymentScenarioControlRequestSchema = z.strictObject({
+  payment_reference: paymentReferenceSchema,
+  configuration: paymentScenarioConfigurationSchema,
+});
+
+export const paymentScenarioControlResponseSchema =
+  paymentScenarioControlRequestSchema;
+
 export type PaymentScenario = z.infer<typeof paymentScenarioSchema>;
 export type TransportFailure = z.infer<typeof transportFailureSchema>;
 export type PaymentScenarioConfiguration = z.infer<
   typeof paymentScenarioConfigurationSchema
+>;
+export type PaymentScenarioControlRequest = z.infer<
+  typeof paymentScenarioControlRequestSchema
+>;
+export type PaymentScenarioControlResponse = z.infer<
+  typeof paymentScenarioControlResponseSchema
 >;
 
 export const DEFAULT_PAYMENT_SCENARIO_CONFIGURATION =

@@ -46,15 +46,16 @@ Only the lead agent updates task status. At most one critical-path task may be
 
 ### Next task
 
-`M2-04` — Implement `GET /api/payments/:reference` after the approved M2-03
-slice is committed locally.
+`M2-05` — Implement the requote route and typed early-requote conflict after
+the focused M2-04 commit.
 
 Milestone M1 is committed and verified. Contracts, lifecycle presentation,
 exact money handling, deadline reconciliation, polling policy, and all supplied
 PDF fixtures are covered. M2-01 is committed locally as `5d47f7d`, and M2-02 is
-committed locally as `c4be2d9`. M2-03 has passed verification and awaits the
-approved local commit. The candidate authorized autonomous completion of the
-remaining M2 milestone. Shopper-facing feature work has not started.
+committed locally as `c4be2d9`, and M2-03 is committed locally as `00ab520`.
+M2-04 has passed verification and is ready for its autonomous focused commit.
+The candidate authorized completion of the remaining M2 milestone.
+Shopper-facing feature work has not started.
 
 ## Milestone M0 — Design gates and repository foundation
 
@@ -396,8 +397,8 @@ After schemas/interfaces are frozen by the lead:
 | M2-01 | Implement validated currency fixtures and `GET /api/currencies`. | M1-09 | `DONE` | Lead | Runtime-validated fixture and HTTP route return all six documented combinations; four focused tests, full checks, production build, and live HTTP verification pass. |
 | M2-02 | Implement quote factory and `POST /api/payments`. | M2-01 | `DONE` | Lead | All six catalog methods produce validated, internally consistent quotes with exact decimal totals and three-minute expiry; malformed or unavailable selections return typed 400 problems; focused/full tests, build, and live HTTP checks pass. |
 | M2-03 | Implement payment scenario store/simulator. | M1-09 | `DONE` | Lead | Exact-state and quote-consistent deterministic progression modes, stable status snapshots, validated delay/failure controls, and server-only store integration pass focused and full verification. |
-| M2-04 | Implement `GET /api/payments/:reference`. | M2-03 | `READY` | Unassigned | All eight states, delay, one-shot failure, and persistent failure are triggerable. |
-| M2-05 | Implement requote route and 409 behavior. | M2-02, M2-03 | `BLOCKED` | Unassigned | Same reference; complete replacement quote; typed early-requote conflict. |
+| M2-04 | Implement `GET /api/payments/:reference`. | M2-03 | `DONE` | Lead | All eight states, delay, one-shot/persistent HTTP failure, and a real empty-reply disconnect are triggerable through validated HTTP routes; full tests, build, and live Next.js checks pass. |
+| M2-05 | Implement requote route and 409 behavior. | M2-02, M2-03 | `READY` | Unassigned | Same reference; complete replacement quote; typed early-requote conflict. |
 | M2-06 | Add development request instrumentation for concurrency evidence. | M2-04 | `BLOCKED` | Unassigned | Tests can observe maximum in-flight polls without production UI coupling. |
 | M2-07 | Add route/contract integration tests and commit. | M2-01..M2-06 | `BLOCKED` | Lead | Every assessment condition is reachable through HTTP. |
 
@@ -472,6 +473,30 @@ Risks/assumptions: the store is intentionally process-local and mock-only;
                    host Node remains 24.16.0 versus the declared 24.18.0
 Commit strategy: approved by the candidate on 2026-08-18
 Next: M2-04
+```
+
+### M2-04 evidence
+
+```text
+Task: M2-04
+Status: DONE
+Owner: Lead
+Files: dynamic payment-status route and focused test;
+       development-only scenario route and focused test;
+       scenario control schemas; generic 404/500 problem contracts and tests;
+       architecture, execution, and discussion documentation
+Checks: focused Vitest and typecheck; live POST payment, PUT scenario, and GET
+        status requests for success, 250 ms one-shot 500/recovery, and network
+        disconnect; pnpm check; pnpm build; git diff --check
+Results: all eight states validate; 61 initial route-focused tests and all 235
+         repository tests passed; live failure took ~261 ms, recovery ~259 ms,
+         and disconnect returned curl exit 52; production build passed
+Requirements: PR-09; PR-14; PR-16; PR-17; M2-04 acceptance gate
+Risks/assumptions: the disconnect intentionally emits a Next.js server pipe
+                   error while giving the client an empty reply; the scenario
+                   control route returns 404 in production; host Node remains
+                   24.16.0 versus the declared 24.18.0
+Next: M2-05
 ```
 
 ### M2 safe parallelism

@@ -7,9 +7,13 @@ import {
   API_OPERATION,
   BAD_REQUEST_PROBLEM_TITLE,
   BAD_REQUEST_PROBLEM_TYPE,
+  INTERNAL_SERVER_ERROR_PROBLEM_TITLE,
+  NOT_FOUND_PROBLEM_TITLE,
   QUOTE_NOT_EXPIRED_PROBLEM_TYPE,
   ProtocolError,
   badRequestProblemSchema,
+  internalServerErrorProblemSchema,
+  notFoundProblemSchema,
   quoteNotExpiredProblemSchema,
   type CheckoutContractError,
 } from "./problem";
@@ -46,6 +50,32 @@ describe("badRequestProblemSchema", () => {
         ...override,
       }).success,
     ).toBe(false);
+  });
+});
+
+describe("generic HTTP problem schemas", () => {
+  it.each([
+    [
+      notFoundProblemSchema,
+      {
+        type: BAD_REQUEST_PROBLEM_TYPE,
+        title: NOT_FOUND_PROBLEM_TITLE,
+        status: 404,
+        detail: "The requested payment was not found.",
+      },
+    ],
+    [
+      internalServerErrorProblemSchema,
+      {
+        type: BAD_REQUEST_PROBLEM_TYPE,
+        title: INTERNAL_SERVER_ERROR_PROBLEM_TITLE,
+        status: 500,
+        detail: "A simulated server error occurred.",
+      },
+    ],
+  ])("validates a strict generic problem", (schema, problem) => {
+    expect(schema.parse(problem)).toEqual(problem);
+    expect(schema.safeParse({ ...problem, debug: true }).success).toBe(false);
   });
 });
 
