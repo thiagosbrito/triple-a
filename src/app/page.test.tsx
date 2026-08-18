@@ -27,7 +27,10 @@ function renderPage() {
   return { ...view, queryClient };
 }
 
-function mockSuccessfulCheckoutApi() {
+function mockSuccessfulCheckoutApi(
+  transformPayment: (payment: CreatePaymentResponse) => unknown = (payment) =>
+    payment,
+) {
   return vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => {
     if (String(input) === "/api/currencies") {
       return Promise.resolve(Response.json(CURRENCIES_FIXTURE));
@@ -38,7 +41,9 @@ function mockSuccessfulCheckoutApi() {
         JSON.parse(String(init?.body)),
       );
       return Promise.resolve(
-        Response.json(createMockPayment(request), { status: 201 }),
+        Response.json(transformPayment(createMockPayment(request)), {
+          status: 201,
+        }),
       );
     }
 
@@ -110,8 +115,17 @@ describe("hosted checkout page", () => {
     expect(polygon).toBeChecked();
     expect(
       await screen.findByRole("status", { name: "Quote created" }),
-    ).toHaveTextContent("USDC on Polygon is now fixed for this quote.");
-    expect(polygon).toBeDisabled();
+    ).toHaveTextContent("USDC on Polygon");
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Complete your payment",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("radio")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Change payment method" }),
+    ).toBeInTheDocument();
   });
 
   it("recovers from a catalog failure without implying a payment failed", async () => {
@@ -141,6 +155,9 @@ describe("hosted checkout page", () => {
     await user.click(screen.getByRole("button", { name: "Try again" }));
 
     expect(await screen.findAllByRole("radio")).toHaveLength(6);
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Choose how to pay" }),
+    ).toBeInTheDocument();
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
 
@@ -199,7 +216,7 @@ describe("hosted checkout page", () => {
 
     expect(
       await screen.findByRole("status", { name: "Quote created" }),
-    ).toHaveTextContent("USDC on Polygon is now fixed for this quote.");
+    ).toHaveTextContent("USDC on Polygon");
 
     const obsoletePayment: CreatePaymentResponse = {
       ...createMockPayment(
@@ -241,5 +258,115 @@ describe("hosted checkout page", () => {
     expect(
       screen.getByRole("status", { name: "Quote created" }),
     ).toHaveTextContent("USDC on Polygon");
+  });
+
+  it("requires no-funds-sent confirmation before returning to selection", async () => {
+    mockSuccessfulCheckoutApi();
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await user.click(
+      await screen.findByRole("radio", { name: "USDC on Polygon" }),
+    );
+    await screen.findByRole("status", { name: "Quote created" });
+
+    const changeButton = screen.getByRole("button", {
+      name: "Change payment method",
+    });
+    await user.click(changeButton);
+
+    const confirmation = screen.getByRole("alertdialog", {
+      name: "Confirm payment method change",
+    });
+    expect(confirmation).toHaveTextContent(
+      "Continue only if you have not sent funds or started the transfer.",
+    );
+    const keepButton = screen.getByRole("button", {
+      name: "Keep current quote",
+    });
+    await waitFor(() => expect(keepButton).toHaveFocus());
+
+    await user.click(keepButton);
+
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("status", { name: "Quote created" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("radio")).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Change payment method" }),
+      ).toHaveFocus(),
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Change payment method" }),
+    );
+    await user.click(
+      screen.getByRole("button", {
+        name: "I have not sent funds — change method",
+      }),
+    );
+
+    expect(
+      screen.queryByRole("status", { name: "Quote created" }),
+    ).not.toBeInTheDocument();
+    expect(await screen.findAllByRole("radio")).toHaveLength(6);
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Choose how to pay" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("radio", { name: "USDC on Polygon" }),
+    ).not.toBeChecked();
+  });
+
+  it("rejects a mathematically inconsistent quote before showing transfer instructions", async () => {
+    mockSuccessfulCheckoutApi((payment) => ({
+      ...payment,
+      quote: {
+        ...payment.quote,
+        total_due: "163.36",
+      },
+    }));
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await user.click(
+      await screen.findByRole("radio", { name: "USDC on Polygon" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "We could not create this quote",
+    );
+    expect(
+      screen.queryByRole("region", { name: "Send exactly" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("rejects transfer amounts beyond the API-provided asset precision", async () => {
+    mockSuccessfulCheckoutApi((payment) => ({
+      ...payment,
+      quote: {
+        ...payment.quote,
+        crypto_amount: "163.2500001",
+        total_due: "163.3500001",
+      },
+    }));
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await user.click(
+      await screen.findByRole("radio", { name: "USDC on Polygon" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "We could not create this quote",
+    );
+    expect(
+      screen.queryByRole("region", { name: "Send exactly" }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -8,6 +8,8 @@ import { useBrowserLocale } from "../hooks/use-browser-locale";
 import { useCurrencies } from "../hooks/use-currencies";
 import { useCreatePayment } from "../hooks/use-create-payment";
 import { OrderSummaryCard } from "./order-summary";
+import { PaymentInstructions } from "./payment-instructions";
+import { PaymentMethodCommitment } from "./payment-method-commitment";
 import { PaymentMethodSelector } from "./payment-method-selector";
 
 type CheckoutPageProps = Readonly<{
@@ -21,15 +23,34 @@ export function CheckoutPage({ session }: CheckoutPageProps) {
   const [selection, setSelection] = useState<PaymentMethodSelection | null>(
     null,
   );
-  const selectedNetwork = selection
-    ? currencies.data?.currencies
-        .find((currency) => currency.code === selection.currency)
-        ?.networks.find((network) => network.id === selection.network)
+  const selectedCurrency = selection
+    ? currencies.data?.currencies.find(
+        (currency) => currency.code === selection.currency,
+      )
     : undefined;
+  const selectedNetwork = selection
+    ? selectedCurrency?.networks.find(
+        (network) => network.id === selection.network,
+      )
+    : undefined;
+  const hasIssuedInstructions = Boolean(quote.data && selectedCurrency);
 
   function selectPaymentMethod(nextSelection: PaymentMethodSelection): void {
+    const currency = currencies.data?.currencies.find(
+      (candidate) => candidate.code === nextSelection.currency,
+    );
+
+    if (!currency) {
+      return;
+    }
+
     setSelection(nextSelection);
-    quote.requestQuote(nextSelection);
+    quote.requestQuote(nextSelection, currency.decimals);
+  }
+
+  function changePaymentMethod(): void {
+    quote.reset();
+    setSelection(null);
   }
 
   return (
@@ -55,14 +76,19 @@ export function CheckoutPage({ session }: CheckoutPageProps) {
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-10">
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.4)] sm:p-8">
             <p className="text-sm font-semibold text-emerald-700">
-              Payment method
+              {hasIssuedInstructions
+                ? "Payment instructions"
+                : "Payment method"}
             </p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-              Choose how to pay
+              {hasIssuedInstructions
+                ? "Complete your payment"
+                : "Choose how to pay"}
             </h1>
             <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">
-              Select a supported stablecoin or cryptocurrency and the network
-              available in your wallet.
+              {hasIssuedInstructions
+                ? "Use the exact amount, network, and destination below. Review every detail in your wallet before sending."
+                : "Select a supported stablecoin or cryptocurrency and the network available in your wallet."}
             </p>
 
             <div className="mt-8 border-t border-slate-100 pt-8">
@@ -94,12 +120,42 @@ export function CheckoutPage({ session }: CheckoutPageProps) {
                     Try again
                   </button>
                 </div>
+              ) : quote.data && selectedCurrency ? (
+                <>
+                  <PaymentMethodCommitment
+                    payment={quote.data}
+                    onConfirmChange={changePaymentMethod}
+                  />
+                  <PaymentInstructions
+                    quote={quote.data.quote}
+                    assetDecimals={selectedCurrency.decimals}
+                  />
+                </>
+              ) : quote.data ? (
+                <div
+                  role="alert"
+                  className="rounded-2xl border border-rose-200 bg-rose-50 p-5"
+                >
+                  <p className="font-semibold text-rose-950">
+                    These payment instructions cannot be verified
+                  </p>
+                  <p className="mt-1 text-sm leading-6 text-rose-800">
+                    Do not send funds. The issued asset is missing from the
+                    validated payment-method catalog.
+                  </p>
+                  <button
+                    type="button"
+                    className="mt-4 min-h-11 rounded-xl bg-rose-950 px-4 py-2 text-sm font-semibold text-white outline-offset-2 hover:bg-rose-900 focus-visible:outline-2 focus-visible:outline-rose-950"
+                    onClick={changePaymentMethod}
+                  >
+                    Choose another payment method
+                  </button>
+                </div>
               ) : (
                 <PaymentMethodSelector
                   catalog={currencies.data}
                   value={selection}
                   onChange={selectPaymentMethod}
-                  disabled={quote.data !== undefined}
                 />
               )}
             </div>
@@ -114,7 +170,10 @@ export function CheckoutPage({ session }: CheckoutPageProps) {
               </p>
             ) : null}
 
-            {selection && selectedNetwork && quote.isError ? (
+            {selection &&
+            selectedCurrency &&
+            selectedNetwork &&
+            quote.isError ? (
               <div
                 role="alert"
                 className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 p-4"
@@ -129,30 +188,13 @@ export function CheckoutPage({ session }: CheckoutPageProps) {
                 <button
                   type="button"
                   className="mt-3 min-h-11 rounded-xl bg-rose-950 px-4 py-2 text-sm font-semibold text-white outline-offset-2 hover:bg-rose-900 focus-visible:outline-2 focus-visible:outline-rose-950"
-                  onClick={() => quote.requestQuote(selection)}
+                  onClick={() =>
+                    quote.requestQuote(selection, selectedCurrency.decimals)
+                  }
                 >
                   Retry quote
                 </button>
               </div>
-            ) : null}
-
-            {quote.data ? (
-              <section
-                role="status"
-                aria-labelledby="quote-created-title"
-                className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-950"
-              >
-                <p id="quote-created-title" className="font-semibold">
-                  Quote created
-                </p>
-                <p className="mt-1 text-sm leading-6">
-                  {quote.data.quote.crypto_currency} on{" "}
-                  {quote.data.quote.network_name} is now fixed for this quote.
-                </p>
-                <p className="mt-3 text-xs font-medium tracking-wide text-emerald-800 uppercase">
-                  Payment reference {quote.data.payment_reference}
-                </p>
-              </section>
             ) : null}
           </section>
 

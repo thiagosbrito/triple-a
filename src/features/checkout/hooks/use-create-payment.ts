@@ -11,17 +11,25 @@ import {
 import type { CreatePaymentResponse } from "../api/contracts/payments";
 import { ProtocolError, type ProtocolIssue } from "../api/contracts/problem";
 import type { CheckoutSession } from "../config/checkout-session";
+import {
+  addDecimalAmounts,
+  assertAmountScale,
+  compareDecimalAmounts,
+  MoneyError,
+} from "../domain/money";
 import type { PaymentMethodSelection } from "../domain/payment-method";
 
 type PaymentIntent = Readonly<{
   id: number;
   selection: PaymentMethodSelection;
+  assetDecimals: number;
   signal: AbortSignal;
 }>;
 
 function assertPaymentMatchesSession(
   payment: CreatePaymentResponse,
   session: CheckoutSession,
+  assetDecimals: number,
 ): CreatePaymentResponse {
   const issues: ProtocolIssue[] = [];
 
@@ -56,6 +64,39 @@ function assertPaymentMatchesSession(
     });
   }
 
+  const transferAmounts = [
+    ["crypto_amount", payment.quote.crypto_amount],
+    ["network_fee", payment.quote.network_fee],
+    ["total_due", payment.quote.total_due],
+  ] as const;
+
+  for (const [field, amount] of transferAmounts) {
+    try {
+      assertAmountScale(amount, assetDecimals);
+    } catch (error) {
+      if (!(error instanceof MoneyError)) {
+        throw error;
+      }
+
+      issues.push({
+        message: `Quote ${field} exceeds the selected asset precision`,
+        path: ["quote", field],
+      });
+    }
+  }
+
+  if (
+    compareDecimalAmounts(
+      addDecimalAmounts(payment.quote.crypto_amount, payment.quote.network_fee),
+      payment.quote.total_due,
+    ) !== 0
+  ) {
+    issues.push({
+      message: "Quote total due does not equal payment amount plus network fee",
+      path: ["quote", "total_due"],
+    });
+  }
+
   if (issues.length > 0) {
     throw new ProtocolError("create_payment", issues);
   }
@@ -70,7 +111,7 @@ export function useCreatePayment(session: CheckoutSession) {
 
   const mutation = useMutation({
     mutationKey: checkoutMutationKeys.createPayment(),
-    mutationFn: async ({ selection, signal }: PaymentIntent) => {
+    mutationFn: async ({ selection, assetDecimals, signal }: PaymentIntent) => {
       const payment = await checkoutApi.createPayment(
         {
           order_id: session.orderId,
@@ -80,7 +121,7 @@ export function useCreatePayment(session: CheckoutSession) {
         { signal },
       );
 
-      return assertPaymentMatchesSession(payment, session);
+      return assertPaymentMatchesSession(payment, session, assetDecimals);
     },
     onSuccess: (payment, intent) => {
       if (intent.id !== latestIntentId.current) {
@@ -95,7 +136,7 @@ export function useCreatePayment(session: CheckoutSession) {
   });
 
   const requestQuote = useCallback(
-    (selection: PaymentMethodSelection) => {
+    (selection: PaymentMethodSelection, assetDecimals: number) => {
       activeController.current?.abort();
 
       const controller = new AbortController();
@@ -106,6 +147,7 @@ export function useCreatePayment(session: CheckoutSession) {
       mutation.mutate({
         id: intentId,
         selection,
+        assetDecimals,
         signal: controller.signal,
       });
     },
