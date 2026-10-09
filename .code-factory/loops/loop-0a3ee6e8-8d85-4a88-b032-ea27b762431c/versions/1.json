@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 2,
+  "id": "loop-0a3ee6e8-8d85-4a88-b032-ea27b762431c",
+  "name": "Implement → Review → Validate",
+  "version": 1,
+  "status": "published",
+  "steps": [
+    {
+      "id": "implement",
+      "name": "Implement",
+      "kind": "agent",
+      "stage": "implementation",
+      "role": "Implementer",
+      "instruction": "Implement the requested change and explain the files changed.",
+      "expectedOutputs": [
+        "Implementation and change summary"
+      ]
+    },
+    {
+      "id": "review",
+      "name": "Review",
+      "kind": "agent",
+      "stage": "review",
+      "role": "Reviewer",
+      "instruction": "Review the implementation against the request and identify concrete findings.",
+      "expectedOutputs": [
+        "Review verdict and findings"
+      ]
+    },
+    {
+      "id": "validate",
+      "name": "Validate",
+      "kind": "agent",
+      "stage": "validation",
+      "role": "Validator",
+      "instruction": "Run relevant checks and report the results with evidence.",
+      "expectedOutputs": [
+        "Validation receipts"
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "implement",
+      "to": "review"
+    },
+    {
+      "from": "review",
+      "to": "validate"
+    }
+  ],
+  "groups": [],
+  "joins": [],
+  "decisions": [],
+  "policy": {
+    "maxAttemptsPerStep": 3,
+    "maxImplementationRounds": 2
+  }
+}
